@@ -1,0 +1,3 @@
+*.tlog
+src/Client/.vs/*
+src/Client/Client/x64/Release/moc/*
