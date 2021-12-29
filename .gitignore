@@ -1,3 +1,6 @@
 *.tlog
 src/Client/.vs/*
 src/Client/Client/x64/Release/moc/*
+src/Client/Client/x64/Debug/*
+src/Server/.vs/Server/DesignTimeBuild/.dtbcache.v2
+src/Server/.vs/Server/v17/.suo
