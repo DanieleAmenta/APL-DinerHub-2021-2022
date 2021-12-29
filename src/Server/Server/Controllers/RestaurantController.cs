@@ -91,17 +91,33 @@ namespace Server.Controllers
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    // TODO: unique email
-                    // Get last element and create a new id for the new user
-                    var dbRestaurantList = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").AsQueryable().ToList();
-                    int LastRestaurantId = dbRestaurantList.Last().RestaurantId;
-                    restaurant.RestaurantId = LastRestaurantId + 1;
+                    // Email must be unique
+                    var filterEmailRestaurant = Builders<Restaurant>.Filter.Eq("Email", restaurant.Email);
+                    var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                    var dbListRestaurant = collectionRestaurant.Find(filterEmailRestaurant).FirstOrDefault();
 
-                    restaurant.Email = restaurant.Email.ToLower();
+                    var filterEmailUser = Builders<User>.Filter.Eq("Email", restaurant.Email);
+                    var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbListUser = collectionUser.Find(filterEmailUser).FirstOrDefault();
 
-                    dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").InsertOne(restaurant);
+                    if (dbListRestaurant == null && dbListUser == null)
+                    {
+                        // Get last element and create a new id for the new user
+                        var dbRestaurantList = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").AsQueryable().ToList();
+                        int LastRestaurantId = dbRestaurantList.Last().RestaurantId;
+                        restaurant.RestaurantId = LastRestaurantId + 1;
 
-                    return Ok("Restaurant added successfully!");
+                        restaurant.Email = restaurant.Email.ToLower();
+
+                        dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").InsertOne(restaurant);
+
+                        return Ok("Restaurant added successfully!");
+                    }
+                    else
+                    {
+                        return BadRequest("Email already in use!");
+                    }
+
                 }
                 else
                 {
@@ -139,7 +155,14 @@ namespace Server.Controllers
                         var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
                         var dbList = collection.Find(filter).FirstOrDefault();
 
-                        if (dbList != null)
+                    if (dbList != null)
+                    {
+                        // Email must be unique
+                        var filterEmailRestaurant = Builders<Restaurant>.Filter.Eq("Email", restaurant.Email);
+                        var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                        var dbListRestaurant = collectionRestaurant.Find(filterEmailRestaurant).FirstOrDefault();
+
+                        if (dbListRestaurant == null)
                         {
                             var update = Builders<Restaurant>.Update.Set("Name", restaurant.Name)
                                                                 .Set("Address", restaurant.Address)
@@ -154,14 +177,19 @@ namespace Server.Controllers
                         }
                         else
                         {
-                            return Ok("No restaurant found with this ID!");
+                            return BadRequest("Email already in use!");
                         }
                     }
                     else
                     {
-                        return BadRequest("One or more validation errors occurred.");
+                        return Ok("No restaurant found with this ID!");
                     }
                 }
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
+            }
             catch (Exception ex)
             {
                 Console.WriteLine("Internal Server Error: ", ex.Message);
