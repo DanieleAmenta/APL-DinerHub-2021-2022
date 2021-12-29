@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Server.Models;
+using System.Text.RegularExpressions;
 
 namespace Server.Controllers
 {
@@ -47,14 +48,21 @@ namespace Server.Controllers
         {
             try
             {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                {
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", id);
+                    var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", id);
 
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
-                var dbList = collection.Find(filter).FirstOrDefault();
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                    var dbList = collection.Find(filter).FirstOrDefault();
 
-                return Ok(dbList);
+                    return Ok(dbList);
+                }
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
             }
             catch (Exception ex)
             {
@@ -73,15 +81,32 @@ namespace Server.Controllers
         {
             try
             {
-                // TODO: validation input // Error 400 in this case
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                // TODO: encode password
+                if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(restaurant.Address.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(restaurant.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                    && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
+                    && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                    )
+                {
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                int LastRestaurantId = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").AsQueryable().Count();
-                restaurant.RestaurantId = LastRestaurantId + 1;
+                    // TODO: unique email
+                    // Get last element and create a new id for the new user
+                    var dbRestaurantList = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").AsQueryable().ToList();
+                    int LastRestaurantId = dbRestaurantList.Last().RestaurantId;
+                    restaurant.RestaurantId = LastRestaurantId + 1;
 
-                dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").InsertOne(restaurant);
+                    restaurant.Email = restaurant.Email.ToLower();
 
-                return Ok("Restaurant added successfully!");
+                    dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").InsertOne(restaurant);
+
+                    return Ok("Restaurant added successfully!");
+                }
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
             }
             catch (Exception ex)
             {
@@ -100,31 +125,43 @@ namespace Server.Controllers
         {
             try
             {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                    if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
+                        && Regex.IsMatch(restaurant.Address.ToString(), @"^[a-zA-Z]{2,}$")
+                        && Regex.IsMatch(restaurant.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                        && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
+                        && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                        )
+                    {
+                        MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", restaurant.RestaurantId);
+                        var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", restaurant.RestaurantId);
 
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
-                var dbList = collection.Find(filter).FirstOrDefault();
+                        var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                        var dbList = collection.Find(filter).FirstOrDefault();
 
-                if (dbList != null)
-                {
-                    var update = Builders<Restaurant>.Update.Set("Name", restaurant.Name)
-                                                        .Set("Address", restaurant.Address)
-                                                        .Set("Phone", restaurant.Phone)
-                                                        .Set("Email", restaurant.Email)
-                                                        .Set("Psw", restaurant.Psw)
-                                                        .Set("IsRestaurant", true);     // Cannot override IsRestaurant
+                        if (dbList != null)
+                        {
+                            var update = Builders<Restaurant>.Update.Set("Name", restaurant.Name)
+                                                                .Set("Address", restaurant.Address)
+                                                                .Set("Phone", restaurant.Phone)
+                                                                .Set("Email", restaurant.Email)
+                                                                .Set("Psw", restaurant.Psw)
+                                                                .Set("IsRestaurant", true);     // Cannot override IsRestaurant
 
-                    dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").UpdateOne(filter, update);
+                            dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").UpdateOne(filter, update);
 
-                    return Ok("Update Successfully");
+                            return Ok("Update Successfully");
+                        }
+                        else
+                        {
+                            return Ok("No restaurant found with this ID!");
+                        }
+                    }
+                    else
+                    {
+                        return BadRequest("One or more validation errors occurred.");
+                    }
                 }
-                else
-                {
-                    return Ok("No restaurant found with this ID!");
-                }
-            }
             catch (Exception ex)
             {
                 Console.WriteLine("Internal Server Error: ", ex.Message);
@@ -142,22 +179,29 @@ namespace Server.Controllers
         {
             try
             {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
-
-                var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", id);
-
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
-                var dbList = collection.Find(filter).FirstOrDefault();
-
-                if (dbList != null)
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
                 {
-                    dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").DeleteOne(filter);
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    return Ok("Deleted Successfully");
+                    var filter = Builders<Restaurant>.Filter.Eq("RestaurantId", id);
+
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                    var dbList = collection.Find(filter).FirstOrDefault();
+
+                    if (dbList != null)
+                    {
+                        dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").DeleteOne(filter);
+
+                        return Ok("Deleted Successfully");
+                    }
+                    else
+                    {
+                        return Ok("No restaurant found with this ID!");
+                    }
                 }
                 else
                 {
-                    return Ok("No restaurant found with this ID!");
+                    return BadRequest("One or more validation errors occurred.");
                 }
             }
             catch (Exception ex)
