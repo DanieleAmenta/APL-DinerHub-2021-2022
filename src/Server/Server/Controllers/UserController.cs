@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Server.Models;
 using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
 
 namespace Server.Controllers
 {
@@ -55,15 +56,22 @@ namespace Server.Controllers
         {
             try
             {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                {
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var filter = Builders<User>.Filter.Eq("UserId", id);
+                    var filter = Builders<User>.Filter.Eq("UserId", id);
 
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
 
-                var dbList = collection.Find(filter).FirstOrDefault();
+                    var dbList = collection.Find(filter).FirstOrDefault();
 
-                return Ok(dbList);
+                    return Ok(dbList);
+                }
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
             }
             catch (Exception ex)
             {
@@ -82,16 +90,32 @@ namespace Server.Controllers
         {
             try {
                 // TODO: encode password
-                // TODO: validation input
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                if (Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(user.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                    && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
+                    && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                    )
+                {
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                // TODO: unique email
-                int LastUserId = dbClient.GetDatabase("dinerhub").GetCollection<User>("User").AsQueryable().Count();
-                user.UserId = LastUserId + 1;
+                    // TODO: unique email
+                    // Get last element and create a new id for the new user
+                    var dbUserList = dbClient.GetDatabase("dinerhub").GetCollection<User>("User").AsQueryable().ToList();
+                    int LastUserId = dbUserList.Last().UserId;
+                    user.UserId = LastUserId + 1;
 
-                dbClient.GetDatabase("dinerhub").GetCollection<User>("User").InsertOne(user);
+                    user.Balance = 0.00;
+                    user.Email = user.Email.ToLower();
 
-                return Ok("User added successfully");
+                    dbClient.GetDatabase("dinerhub").GetCollection<User>("User").InsertOne(user);
+
+                    return Ok("User added successfully");
+                }
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
             }
             catch (Exception ex)
             {
@@ -109,32 +133,39 @@ namespace Server.Controllers
         public IActionResult Post(string email, string psw)
         {
             try {
-                // TODO: Check if email and psw are null // Error 400 in this case
-                // TODO: Check only in lowercase
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
-
-                var emailFilterUser = Builders<User>.Filter.Eq("Email", email);
-                var pswFilterUser = Builders<User>.Filter.Eq("Psw", psw);
-                var combineFiltersUser = Builders<User>.Filter.And(emailFilterUser, pswFilterUser);
-
-                var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                var dbListUser = collectionUser.Find(combineFiltersUser).FirstOrDefault();
-
-                if (dbListUser == null)
+                if (Regex.IsMatch(psw, @"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$")
+                    && Regex.IsMatch(email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                    )
                 {
-                    // If is not an Admin or an User, it could be a Restaurant
-                    var emailFilterRestaurant = Builders<Restaurant>.Filter.Eq("Email", email);
-                    var pswFilterRestaurant = Builders<Restaurant>.Filter.Eq("Psw", psw);
-                    var combineFiltersRestaurant = Builders<Restaurant>.Filter.And(emailFilterRestaurant, pswFilterRestaurant);
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
-                    var dbListRestaurant = collectionRestaurant.Find(combineFiltersRestaurant).FirstOrDefault();
+                    var emailFilterUser = Builders<User>.Filter.Eq("Email", email.ToLower());
+                    var pswFilterUser = Builders<User>.Filter.Eq("Psw", psw);
+                    var combineFiltersUser = Builders<User>.Filter.And(emailFilterUser, pswFilterUser);
 
-                    return Ok(dbListRestaurant);
+                    var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbListUser = collectionUser.Find(combineFiltersUser).FirstOrDefault();
+
+                    if (dbListUser == null)
+                    {
+                        // If is not an Admin or an User, it could be a Restaurant
+                        var emailFilterRestaurant = Builders<Restaurant>.Filter.Eq("Email", email);
+                        var pswFilterRestaurant = Builders<Restaurant>.Filter.Eq("Psw", psw);
+                        var combineFiltersRestaurant = Builders<Restaurant>.Filter.And(emailFilterRestaurant, pswFilterRestaurant);
+
+                        var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
+                        var dbListRestaurant = collectionRestaurant.Find(combineFiltersRestaurant).FirstOrDefault();
+
+                        return Ok(dbListRestaurant);
+                    }
+
+                    // If the user not exist, the status code is 204 (No Content)
+                    return Ok(dbListUser);
                 }
-
-                // If the user not exist, the status code is 204 (No Content)
-                return Ok(dbListUser);
+                else
+                {
+                    return BadRequest("One or more validation errors occurred.");
+                }
             }
             catch (Exception ex)
             {
@@ -152,29 +183,43 @@ namespace Server.Controllers
         public IActionResult Put(User user)
         {
             try {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
-
-                var filter = Builders<User>.Filter.Eq("UserId", user.UserId);
-
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                var dbList = collection.Find(filter).FirstOrDefault();
-
-                if (dbList != null)
+                if (Regex.IsMatch(user.UserId.ToString(), @"^[1-9]\d*$")
+                    && Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
+                    && Regex.IsMatch(user.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                    && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
+                    && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                    )
                 {
-                    var update = Builders<User>.Update.Set("Name", user.Name)
-                                                        .Set("Surname", user.Surname)
-                                                        .Set("Email", user.Email)
-                                                        .Set("Psw", user.Psw)
-                                                        .Set("Phone", user.Phone)
-                                                        .Set("BirthDate", user.BirthDate)
-                                                        .Set("IsAdmin", user.IsAdmin);
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
+                    var filter = Builders<User>.Filter.Eq("UserId", user.UserId);
 
-                    return Ok("User update successfully!");
-                } else
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).FirstOrDefault();
+
+                    if (dbList != null)
+                    {
+                        var update = Builders<User>.Update.Set("Name", user.Name)
+                                                            .Set("Surname", user.Surname)
+                                                            .Set("Email", user.Email.ToLower())
+                                                            .Set("Psw", user.Psw)
+                                                            .Set("Phone", user.Phone)
+                                                            .Set("BirthDate", user.BirthDate)
+                                                            .Set("IsAdmin", user.IsAdmin);
+
+                        dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
+
+                        return Ok("User update successfully!");
+                    }
+                    else
+                    {
+                        return Ok("No user found with this ID!");
+                    }
+                }
+                else
                 {
-                    return Ok("No user found with this ID!");
+                    return BadRequest("One or more validation errors occurred.");
                 }
             }
             catch (Exception ex)
@@ -193,21 +238,27 @@ namespace Server.Controllers
         public IActionResult Delete(int id)
         {
             try {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")) {
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var filter = Builders<User>.Filter.Eq("UserId", id);
+                    var filter = Builders<User>.Filter.Eq("UserId", id);
 
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                var dbList = collection.Find(filter).FirstOrDefault();
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).FirstOrDefault();
 
-                if (dbList != null)
+                    if (dbList != null)
+                    {
+                        dbClient.GetDatabase("dinerhub").GetCollection<User>("User").DeleteOne(filter);
+
+                        return Ok("User deleted successfully!");
+                    } else
+                    {
+                        return Ok("No user found with this ID!");
+                    }
+                }
+                else
                 {
-                    dbClient.GetDatabase("dinerhub").GetCollection<User>("User").DeleteOne(filter);
-
-                    return Ok("User deleted successfully!");
-                } else
-                {
-                    return Ok("No user found with this ID!");
+                    return BadRequest("One or more validation errors occurred.");
                 }
             }
             catch (Exception ex)
@@ -226,27 +277,42 @@ namespace Server.Controllers
         public IActionResult Patch(int id, double balance)
         {
             try {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
-
-                var filter = Builders<User>.Filter.Eq("UserId", id);
-
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                var dbList = collection.Find(filter).FirstOrDefault();
-
-                // TODO: check on balance value (not go in negative values)
-                // Error 400 in this case
-                if (dbList != null)
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")
+                    && Regex.IsMatch(balance.ToString(), @"^[1-9]\d*$"))
                 {
-                    var oldBalance = dbList.Balance;
-                    var update = Builders<User>.Update.Set("Balance", oldBalance + balance);
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
+                    var filter = Builders<User>.Filter.Eq("UserId", id);
 
-                    return Ok("Balance update successfully!");
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).FirstOrDefault();
+
+                    if (dbList != null)
+                    {
+                        double oldBalance = (double)dbList.Balance;
+                        double newBalance = oldBalance + balance;
+
+                        if (newBalance >= 0)
+                        {
+                            var update = Builders<User>.Update.Set("Balance", newBalance);
+
+                            dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
+
+                            return Ok("Balance update successfully!");
+                        } else
+                        {
+                            return BadRequest("Not enough balance!");
+                        }
+                        
+                    }
+                    else
+                    {
+                        return Ok("No user found with this ID!");
+                    }
                 }
                 else
                 {
-                    return Ok("No user found with this ID!");
+                    return BadRequest("One or more validation errors occurred.");
                 }
             }
             catch (Exception ex)
@@ -266,21 +332,27 @@ namespace Server.Controllers
         {
             try
             {
-                // TODO: check if parameter is int
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
-
-                var filter = Builders<User>.Filter.Eq("UserId", id);
-
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                var dbList = collection.Find(filter).FirstOrDefault();
-
-                if (dbList != null)
+                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
                 {
-                    return Ok(dbList.Balance);
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+
+                    var filter = Builders<User>.Filter.Eq("UserId", id);
+
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).FirstOrDefault();
+
+                    if (dbList != null)
+                    {
+                        return Ok(dbList.Balance);
+                    }
+                    else
+                    {
+                        return Ok("No user found with this ID!");
+                    }
                 }
                 else
                 {
-                    return Ok("No user found with this ID!");
+                    return BadRequest("One or more validation errors occurred.");
                 }
             }
             catch (Exception ex)
