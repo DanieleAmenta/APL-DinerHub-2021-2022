@@ -99,18 +99,29 @@ namespace Server.Controllers
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    // TODO: unique email
-                    // Get last element and create a new id for the new user
-                    var dbUserList = dbClient.GetDatabase("dinerhub").GetCollection<User>("User").AsQueryable().ToList();
-                    int LastUserId = dbUserList.Last().UserId;
-                    user.UserId = LastUserId + 1;
+                    // Email must be unique
+                    var filterEmailUser = Builders<User>.Filter.Eq("Email", user.Email);
+                    var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbListUser = collectionUser.Find(filterEmailUser).FirstOrDefault();
 
-                    user.Balance = 0.00;
-                    user.Email = user.Email.ToLower();
+                    if (dbListUser == null)
+                    {
+                        // Get last element and create a new id for the new user
+                        var dbUserList = dbClient.GetDatabase("dinerhub").GetCollection<User>("User").AsQueryable().ToList();
+                        int LastUserId = dbUserList.Last().UserId;
+                        user.UserId = LastUserId + 1;
 
-                    dbClient.GetDatabase("dinerhub").GetCollection<User>("User").InsertOne(user);
+                        user.Balance = 0.00;
+                        user.Email = user.Email.ToLower();
 
-                    return Ok("User added successfully");
+                        dbClient.GetDatabase("dinerhub").GetCollection<User>("User").InsertOne(user);
+
+                        return Ok("User added successfully");
+                    }
+                    else
+                    {
+                        return BadRequest("Email already in use!");
+                    }
                 }
                 else
                 {
@@ -200,7 +211,14 @@ namespace Server.Controllers
 
                     if (dbList != null)
                     {
-                        var update = Builders<User>.Update.Set("Name", user.Name)
+                        // Email must be unique
+                        var filterEmailUser = Builders<User>.Filter.Eq("Email", user.Email);
+                        var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                        var dbListUser = collectionUser.Find(filterEmailUser).FirstOrDefault();
+
+                        if (dbListUser == null)
+                        {
+                            var update = Builders<User>.Update.Set("Name", user.Name)
                                                             .Set("Surname", user.Surname)
                                                             .Set("Email", user.Email.ToLower())
                                                             .Set("Psw", user.Psw)
@@ -208,9 +226,14 @@ namespace Server.Controllers
                                                             .Set("BirthDate", user.BirthDate)
                                                             .Set("IsAdmin", user.IsAdmin);
 
-                        dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
+                            dbClient.GetDatabase("dinerhub").GetCollection<User>("User").UpdateOne(filter, update);
 
-                        return Ok("User update successfully!");
+                            return Ok("User update successfully!");
+                        }
+                        else
+                        {
+                            return BadRequest("Email already in use!");
+                        }
                     }
                     else
                     {
