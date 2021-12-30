@@ -1,10 +1,5 @@
 #include "UserGUI.h"
 
-#include <QMessageBox>
-#include <QDialog>
-
-#include "Utils.h"
-
 UserGUI::UserGUI(QWidget* parent)
 	: QDialog(parent)
 {
@@ -189,8 +184,15 @@ void UserGUI::on_phoneLineEdit_textChanged(QString text) {
 
 void UserGUI::on_updateProfileBtn_clicked() {
 	try {
-		// TODO: validation check
+		boolean error = false;
 		ui.errorProfileBalanceLabel->setText(QString::fromStdString(""));
+
+		ui.nameErrorLabel->setText(QString::fromStdString(""));
+		ui.addressErrorLabel->setText(QString::fromStdString(""));
+		ui.emailErrorLabel->setText(QString::fromStdString(""));
+		ui.pswErrorLabel->setText(QString::fromStdString(""));
+		ui.phoneErrorLabel->setText(QString::fromStdString(""));
+		ui.errorProfileLabel->setText(QString::fromStdString(""));
 
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(session_userId) });
 
@@ -198,32 +200,74 @@ void UserGUI::on_updateProfileBtn_clicked() {
 			json j = json::parse(r.text);
 
 			if (profileEditedName) {
-				j["name"] = ui.nameLineEdit->text().toStdString();
+				string name = ui.nameLineEdit->text().toStdString();
+
+				if (!regex_match(name, regex(R"([a-zA-Z]{2,})"))) {
+					ui.nameErrorLabel->setText(QString::fromStdString("Insert a valid name!"));
+					error = true;
+				}
+				else {
+					j["name"] = name;
+				}
 			}
 			if (profileEditedSurname) {
-				j["surname"] = ui.surnameLineEdit->text().toStdString();
+				string surname = ui.surnameLineEdit->text().toStdString();
+
+				if (!regex_match(surname, regex(R"([a-zA-Z]{2,})"))) {
+					ui.surnameErrorLabel->setText(QString::fromStdString("Insert a valid surname!"));
+					error = true;
+				}
+				else {
+					j["surname"] = surname;
+				}
 			}
 			if (profileEditedEmail) {
-				j["email"] = ui.emailLineEdit->text().toStdString();
+				string email = ui.emailLineEdit->text().toStdString();
+
+				if (!regex_match(email, regex(R"(([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+))"))) {
+					ui.emailErrorLabel->setText(QString::fromStdString("Insert a valid email!"));
+					error = true;
+				}
+				else {
+					j["email"] = email;
+				}
 			}
 			if (profileEditedPsw) {
-				j["psw"] = ui.pswLineEdit->text().toStdString();
+				string psw = ui.pswLineEdit->text().toStdString();
+
+				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+					error = true;
+				}
+				else {
+					j["psw"] = sha256(psw);
+				}
 			}
 			if (profileEditedPhone) {
-				j["phone"] = ui.phoneLineEdit->text().toStdString();
+				string phone = ui.phoneLineEdit->text().toStdString();
+
+				if (!regex_match(phone, regex(R"(\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*)"))) {
+					ui.phoneErrorLabel->setText(QString::fromStdString("Insert a valid phone number!"));
+					error = true;
+				}
+				else {
+					j["phone"] = phone;
+				}
 			}
 
-			cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/user/update" },
-				cpr::Body{ j.dump() },
-				cpr::Header{ { "Content-Type", "application/json" } });
+			if (!error) {
+				cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/user/update" },
+					cpr::Body{ j.dump() },
+					cpr::Header{ { "Content-Type", "application/json" } });
 
-			if (rUpdate.status_code == 200) {
-				resetVariables();
-				QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
-				logoutUser();
-			}
-			else {
-				ui.errorProfileLabel->setText(QString::fromStdString("An error occour!"));
+				if (rUpdate.status_code == 200) {
+					resetVariables();
+					QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
+					logoutUser();
+				}
+				else {
+					ui.errorProfileLabel->setText(QString::fromStdString("An error occour!"));
+				}
 			}
 		}
 		else {
@@ -374,11 +418,10 @@ void UserGUI::goToProfileTab() {
 
 		json j = json::parse(r.text);
 
-		// TODO: check if fields exists
 		ui.nameLineEdit->setText(QString::fromStdString(j["name"]));
 		ui.surnameLineEdit->setText(QString::fromStdString(j["surname"]));
 		ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-		ui.pswLineEdit->setText(QString::fromStdString(j["psw"]));
+		ui.pswLineEdit->setText(QString::fromStdString(""));
 		ui.phoneLineEdit->setText(QString::fromStdString(j["phone"]));
 		ui.dateLineEdit->setText(QString::fromStdString((j["birthDate"])));
 

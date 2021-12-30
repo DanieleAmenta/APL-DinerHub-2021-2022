@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="UserList">
     <widget class="QTableWidget" name="userList">
@@ -298,7 +298,7 @@
        <x>10</x>
        <y>130</y>
        <width>201</width>
-       <height>291</height>
+       <height>380</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -313,6 +313,19 @@
        <widget class="QLineEdit" name="restaurantName"/>
       </item>
       <item>
+       <widget class="QLabel" name="nameErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="restaurantAddLabel">
         <property name="text">
          <string>Address</string>
@@ -321,6 +334,19 @@
       </item>
       <item>
        <widget class="QLineEdit" name="restaurantAdd"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="addressErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="restaurantPhoneLabel">
@@ -333,6 +359,19 @@
        <widget class="QLineEdit" name="restaurantPhone"/>
       </item>
       <item>
+       <widget class="QLabel" name="phoneErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="restaurantEmailLabel">
         <property name="text">
          <string>Email</string>
@@ -341,6 +380,19 @@
       </item>
       <item>
        <widget class="QLineEdit" name="restaurantEmail"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="emailErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="restaurantPswLabel">
@@ -352,13 +404,26 @@
       <item>
        <widget class="QLineEdit" name="restaurantPsw"/>
       </item>
+      <item>
+       <widget class="QLabel" name="pswErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
     <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>440</y>
+       <y>520</y>
        <width>371</width>
        <height>53</height>
       </rect>
@@ -388,6 +453,25 @@
        <width>371</width>
        <height>20</height>
       </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_6">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>530</y>
+       <width>55</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
      </property>
      <property name="text">
       <string/>
@@ -481,7 +565,7 @@
        <x>270</x>
        <y>130</y>
        <width>261</width>
-       <height>121</height>
+       <height>149</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -496,6 +580,19 @@
        <widget class="QLineEdit" name="emailLineEdit"/>
       </item>
       <item>
+       <widget class="QLabel" name="emailProfileErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="pswProfileLabel">
         <property name="text">
          <string>Password</string>
@@ -504,6 +601,19 @@
       </item>
       <item>
        <widget class="QLineEdit" name="pswLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="pswProfileErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

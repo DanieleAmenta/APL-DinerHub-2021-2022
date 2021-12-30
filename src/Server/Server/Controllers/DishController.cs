@@ -81,15 +81,15 @@ namespace Server.Controllers
         {
             try
             {
-                if (Regex.IsMatch(dish.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                        && Regex.IsMatch(dish.Type.ToString(), @"^[0-4]$")
-                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*$")
+                if (Regex.IsMatch(dish.Name.ToString(), @"^[#.a-zA-Z\s,-]+$")
+                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*(.\d{1,6})?$")
                         )
                 {
-                    // TODO: validation input // Error 400 in this case
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                    int LastDishId = dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").AsQueryable().Count();
+                    // Get last element and create a new id for the new user
+                    var dbDishList = dbClient.GetDatabase("dinerhub").GetCollection<User>("Dish").AsQueryable().ToList();
+                    int LastDishId = dbDishList.Last().UserId;
                     dish.DishId = LastDishId + 1;
 
                     dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").InsertOne(dish);
@@ -118,9 +118,8 @@ namespace Server.Controllers
         {
             try
             {
-                if (Regex.IsMatch(dish.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                        && Regex.IsMatch(dish.Type.ToString(), @"^[0-4]$")
-                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*$")
+                if (Regex.IsMatch(dish.Name.ToString(), @"^[#.a-zA-Z\s,-]+$")
+                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*(.\d{1,6})?$")
                         )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));

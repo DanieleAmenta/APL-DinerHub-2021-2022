@@ -538,9 +538,9 @@
      <property name="geometry">
       <rect>
        <x>260</x>
-       <y>140</y>
+       <y>130</y>
        <width>241</width>
-       <height>319</height>
+       <height>420</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -555,6 +555,26 @@
        <widget class="QLineEdit" name="nameLineEdit"/>
       </item>
       <item>
+       <widget class="QLabel" name="nameErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="addressProfileLabel">
         <property name="text">
          <string>Address</string>
@@ -563,6 +583,27 @@
       </item>
       <item>
        <widget class="QLineEdit" name="addressLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="addressErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+          <underline>false</underline>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="emailProfileLabel">
@@ -575,6 +616,26 @@
        <widget class="QLineEdit" name="emailLineEdit">
         <property name="enabled">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="emailErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_4">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
@@ -599,6 +660,26 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="pswErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_5">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="phoneProfileLabel">
         <property name="text">
          <string>Phone number</string>
@@ -608,13 +689,26 @@
       <item>
        <widget class="QLineEdit" name="phoneLineEdit"/>
       </item>
+      <item>
+       <widget class="QLabel" name="phoneErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
     <widget class="QWidget" name="layoutWidget_7">
      <property name="geometry">
       <rect>
-       <x>180</x>
-       <y>480</y>
+       <x>190</x>
+       <y>550</y>
        <width>391</width>
        <height>53</height>
       </rect>
@@ -827,7 +921,7 @@
       <rect>
        <x>10</x>
        <y>160</y>
-       <width>201</width>
+       <width>241</width>
        <height>291</height>
       </rect>
      </property>
@@ -841,6 +935,26 @@
       </item>
       <item>
        <widget class="QLineEdit" name="dishNameLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="dishNameErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_6">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="dishTypeLabel">
@@ -882,6 +996,26 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="dishTypeErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_7">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="dishPriceLabel">
         <property name="text">
          <string>Price</string>
@@ -895,6 +1029,19 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QLabel" name="dishPriceErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
     <widget class="QLabel" name="deleteDishLabel">
@@ -903,7 +1050,7 @@
        <x>400</x>
        <y>550</y>
        <width>371</width>
-       <height>20</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="text">

@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include "ui_RegisterGUI.h"
 
+#include <regex>
 #include <nlohmann/json.hpp>
 
 #include "Utils.h"
