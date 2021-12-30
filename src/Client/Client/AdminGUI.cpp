@@ -1,10 +1,5 @@
 #include "AdminGUI.h"
 
-#include <QMessageBox>
-#include <QDialog>
-
-#include "Utils.h"
-
 AdminGUI::AdminGUI(QWidget* parent)
 	: QDialog(parent)
 {
@@ -84,24 +79,71 @@ void AdminGUI::on_deleteRestaurantBtn_clicked() {
 
 void AdminGUI::on_createRestaurantBtn_clicked() {
 	try {
+		boolean error = false;
 		json j;
-		j["name"] = ui.restaurantName->text().toStdString();
-		j["address"] = ui.restaurantAdd->text().toStdString();
-		j["phone"] = ui.restaurantPhone->text().toStdString();
-		j["email"] = ui.restaurantEmail->text().toStdString();
-		j["psw"] = ui.restaurantPsw->text().toStdString();
+		ui.nameErrorLabel->setText(QString::fromStdString(""));
+		ui.addressErrorLabel->setText(QString::fromStdString(""));
+		ui.phoneErrorLabel->setText(QString::fromStdString(""));
+		ui.emailErrorLabel->setText(QString::fromStdString(""));
+		ui.pswErrorLabel->setText(QString::fromStdString(""));
 
-		// TODO: validation input fields
-		cpr::Response r = cpr::Post(cpr::Url{ serverUrl + "/restaurant/create" },
-			cpr::Body{ j.dump() },
-			cpr::Header{ { "Content-Type", "application/json" } });
-
-		if (r.status_code == 200) {
-			QMessageBox::information(this, "Login", QString::fromStdString("Restaurant create successfully!"));
-			goToRestaurantListTab();
+		string name = ui.restaurantName->text().toStdString();
+		if (!regex_match(name, regex(R"([a-zA-Z]{2,})"))) {
+			ui.nameErrorLabel->setText(QString::fromStdString("Insert a valid name!"));
+			error = true;
 		}
 		else {
-			ui.createRestaurantError->setText(QString::fromStdString("An error occour!"));
+			j["name"] = name;
+		}
+
+		string address = ui.restaurantAdd->text().toStdString();
+		if (!regex_match(address, regex(R"([#.0-9a-zA-Z\s,-]+)"))) {
+			ui.addressErrorLabel->setText(QString::fromStdString("Insert a valid address!"));
+			error = true;
+		}
+		else {
+			j["address"] = address;
+		}
+
+		string phone = ui.restaurantPhone->text().toStdString();
+		if (!regex_match(phone, regex(R"(\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*)"))) {
+			ui.phoneErrorLabel->setText(QString::fromStdString("Insert a valid phone number!"));
+			error = true;
+		}
+		else {
+			j["phone"] = phone;
+		}
+
+		string email = ui.restaurantEmail->text().toStdString();
+		if (!regex_match(email, regex(R"(([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+))"))) {
+			ui.emailErrorLabel->setText(QString::fromStdString("Insert a valid email!"));
+			error = true;
+		}
+		else {
+			j["email"] = email;
+		}
+
+		string psw = ui.restaurantPsw->text().toStdString();
+		if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+			ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+			error = true;
+		}
+		else {
+			j["psw"] = sha256(psw);
+		}
+
+		if (!error) {
+			cpr::Response r = cpr::Post(cpr::Url{ serverUrl + "/restaurant/create" },
+				cpr::Body{ j.dump() },
+				cpr::Header{ { "Content-Type", "application/json" } });
+
+			if (r.status_code == 200) {
+				QMessageBox::information(this, "Login", QString::fromStdString("Restaurant create successfully!"));
+				goToRestaurantListTab();
+			}
+			else {
+				ui.createRestaurantError->setText(QString::fromStdString("An error occour!"));
+			}
 		}
 	}
 	catch (...) {
@@ -112,8 +154,11 @@ void AdminGUI::on_createRestaurantBtn_clicked() {
 
 void AdminGUI::on_updateProfileBtn_clicked() {
 	try {
-		// TODO: validation check
+		boolean error = false;
+
 		ui.updateProfileError->setText(QString::fromStdString(""));
+		ui.emailProfileErrorLabel->setText(QString::fromStdString(""));
+		ui.pswProfileErrorLabel->setText(QString::fromStdString(""));
 
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(session_adminId) });
 
@@ -121,23 +166,41 @@ void AdminGUI::on_updateProfileBtn_clicked() {
 			json j = json::parse(r.text);
 
 			if (profileEditedEmail) {
-				j["email"] = ui.emailLineEdit->text().toStdString();
+				string email = ui.emailLineEdit->text().toStdString();
+
+				if (!regex_match(email, regex(R"(([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+))"))) {
+					ui.emailErrorLabel->setText(QString::fromStdString("Insert a valid email!"));
+					error = true;
+				}
+				else {
+					j["email"] = email;
+				}
 			}
 			if (profileEditedPsw) {
-				j["psw"] = ui.pswLineEdit->text().toStdString();
+				string psw = ui.pswLineEdit->text().toStdString();
+
+				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+					error = true;
+				}
+				else {
+					j["psw"] = sha256(psw);
+				}
 			}
 
-			cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/user/update" },
-				cpr::Body{ j.dump() },
-				cpr::Header{ { "Content-Type", "application/json" } });
+			if (!error) {
+				cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/user/update" },
+					cpr::Body{ j.dump() },
+					cpr::Header{ { "Content-Type", "application/json" } });
 
-			if (rUpdate.status_code == 200) {
-				resetVariables();
-				QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
-				logoutUser();
-			}
-			else {
-				ui.updateProfileError->setText(QString::fromStdString("An error occour!"));
+				if (rUpdate.status_code == 200) {
+					resetVariables();
+					QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
+					logoutUser();
+				}
+				else {
+					ui.updateProfileError->setText(QString::fromStdString("An error occour!"));
+				}
 			}
 		}
 		else {
@@ -296,9 +359,8 @@ void AdminGUI::goToProfileTab() {
 		json j = json::parse(r.text);
 
 		if (r.status_code == 200) {
-			// TODO: check if fields exist
 			ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-			ui.pswLineEdit->setText(QString::fromStdString(j["psw"]));
+			ui.pswLineEdit->setText(QString::fromStdString(""));
 		}
 		else {
 			QMessageBox::warning(this, "Login", "Generic error. Please login again!");

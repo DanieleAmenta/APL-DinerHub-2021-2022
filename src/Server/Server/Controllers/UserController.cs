@@ -61,10 +61,11 @@ namespace Server.Controllers
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     var filter = Builders<User>.Filter.Eq("UserId", id);
-
                     var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-
                     var dbList = collection.Find(filter).FirstOrDefault();
+
+                    // Hide password
+                    dbList.Psw = "";
 
                     return Ok(dbList);
                 }
@@ -89,10 +90,8 @@ namespace Server.Controllers
         public IActionResult Post(User user)
         {
             try {
-                // TODO: encode password
                 if (Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
                     && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
                     && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
                     && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
                     )
@@ -144,9 +143,7 @@ namespace Server.Controllers
         public IActionResult Post(string email, string psw)
         {
             try {
-                if (Regex.IsMatch(psw, @"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$")
-                    && Regex.IsMatch(email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
-                    )
+                if (Regex.IsMatch(email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -197,7 +194,6 @@ namespace Server.Controllers
                 if (Regex.IsMatch(user.UserId.ToString(), @"^[1-9]\d*$")
                     && Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
                     && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
                     && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
                     && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
                     )
@@ -213,8 +209,12 @@ namespace Server.Controllers
                     {
                         // Email must be unique
                         var filterEmailUser = Builders<User>.Filter.Eq("Email", user.Email);
+                        var filterIdUser = Builders<User>.Filter.Ne("UserId", user.UserId);
+
+                        var combineFiltersEmail = Builders<User>.Filter.And(filterEmailUser, filterIdUser);
+
                         var collectionUser = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
-                        var dbListUser = collectionUser.Find(filterEmailUser).FirstOrDefault();
+                        var dbListUser = collectionUser.Find(combineFiltersEmail).FirstOrDefault();
 
                         if (dbListUser == null)
                         {

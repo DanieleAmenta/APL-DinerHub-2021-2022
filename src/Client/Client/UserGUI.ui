@@ -431,7 +431,7 @@
      <property name="geometry">
       <rect>
        <x>100</x>
-       <y>70</y>
+       <y>50</y>
        <width>181</width>
        <height>41</height>
       </rect>
@@ -519,9 +519,9 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>120</y>
+       <y>90</y>
        <width>241</width>
-       <height>319</height>
+       <height>464</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -536,6 +536,19 @@
        <widget class="QLineEdit" name="nameLineEdit"/>
       </item>
       <item>
+       <widget class="QLabel" name="nameErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="surnameProfileLabel">
         <property name="text">
          <string>Surname</string>
@@ -544,6 +557,19 @@
       </item>
       <item>
        <widget class="QLineEdit" name="surnameLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="surnameErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="emailProfileLabel">
@@ -556,6 +582,19 @@
        <widget class="QLineEdit" name="emailLineEdit">
         <property name="enabled">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="emailErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
@@ -580,6 +619,19 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="pswErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="phoneProfileLabel">
         <property name="text">
          <string>Phone number</string>
@@ -588,6 +640,19 @@
       </item>
       <item>
        <widget class="QLineEdit" name="phoneLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="phoneErrorLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="dateProfileLabel">
@@ -609,7 +674,7 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>450</y>
+       <y>550</y>
        <width>391</width>
        <height>53</height>
       </rect>

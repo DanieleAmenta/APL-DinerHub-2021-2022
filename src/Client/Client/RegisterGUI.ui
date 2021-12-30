@@ -63,12 +63,18 @@
      <x>270</x>
      <y>50</y>
      <width>301</width>
-     <height>321</height>
+     <height>331</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QLabel" name="nameErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>
@@ -76,13 +82,25 @@
     </item>
     <item>
      <widget class="QLabel" name="surnameErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="emaiLErrorLabel">
+     <widget class="QLabel" name="emailErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>
@@ -90,6 +108,12 @@
     </item>
     <item>
      <widget class="QLabel" name="pswErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>
@@ -97,6 +121,12 @@
     </item>
     <item>
      <widget class="QLabel" name="phoneErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>
@@ -104,6 +134,12 @@
     </item>
     <item>
      <widget class="QLabel" name="dateErrorLabel">
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="text">
        <string/>
       </property>

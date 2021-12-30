@@ -1,10 +1,5 @@
 #include "RestaurantGUI.h"
 
-#include <QMessageBox>
-#include <QDialog>
-
-#include "Utils.h"
-
 RestaurantGUI::RestaurantGUI(QWidget* parent)
 	: QDialog(parent)
 {
@@ -78,7 +73,7 @@ void RestaurantGUI::goToOrdersToPrepareTab() {
 			}
 		}
 		else {
-			QMessageBox::warning(this, "Login", "Generic error. Please login again!");
+			// QMessageBox::warning(this, "Login", "Generic error. Please login again!");
 			logoutUser();
 		}
 	}
@@ -221,6 +216,11 @@ void RestaurantGUI::goToOrdersHistoryTab() {
 void RestaurantGUI::goToProfileTab() {
 	try {
 		ui.errorProfileLabel->setText(QString::fromStdString(""));
+		ui.nameErrorLabel->setText(QString::fromStdString(""));
+		ui.addressErrorLabel->setText(QString::fromStdString(""));
+		ui.emailErrorLabel->setText(QString::fromStdString(""));
+		ui.pswErrorLabel->setText(QString::fromStdString(""));
+		ui.phoneErrorLabel->setText(QString::fromStdString(""));
 
 		resetVariables();
 
@@ -230,11 +230,10 @@ void RestaurantGUI::goToProfileTab() {
 
 		json j = json::parse(r.text);
 
-		// TODO: check if fields exists
 		ui.nameLineEdit->setText(QString::fromStdString(j["name"]));
 		ui.addressLineEdit->setText(QString::fromStdString(j["address"]));
 		ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-		ui.pswLineEdit->setText(QString::fromStdString(j["psw"]));
+		ui.pswLineEdit->setText(QString::fromStdString(""));
 		ui.phoneLineEdit->setText(QString::fromStdString(j["phone"]));
 	}
 	catch (...) {
@@ -347,7 +346,7 @@ void RestaurantGUI::on_readyToCollectBtn_clicked() {
 			goToOrdersToPrepareTab();
 		}
 		else {
-			ui.readyToCollectLabel->setText(QString::fromStdString(r.text));
+			ui.readyToCollectLabel->setText(QString::fromStdString("Generic error!"));
 			QMessageBox::warning(this, "Login", "Generic error. Please login again!");
 			logoutUser();
 		}
@@ -370,7 +369,7 @@ void RestaurantGUI::on_collectedBtn_clicked() {
 			goToOrdersToCollectTab();
 		}
 		else {
-			ui.readyToCollectLabel->setText(QString::fromStdString(r.text));
+			ui.readyToCollectLabel->setText(QString::fromStdString("Generic error!"));
 			QMessageBox::warning(this, "Login", "Generic error. Please login again!");
 			logoutUser();
 		}
@@ -383,8 +382,14 @@ void RestaurantGUI::on_collectedBtn_clicked() {
 
 void RestaurantGUI::on_updateProfileBtn_clicked() {
 	try {
-		// TODO: validation check
+		boolean error = false;
+
 		ui.errorProfileLabel->setText(QString::fromStdString(""));
+		ui.nameErrorLabel->setText(QString::fromStdString(""));
+		ui.addressErrorLabel->setText(QString::fromStdString(""));
+		ui.emailErrorLabel->setText(QString::fromStdString(""));
+		ui.pswErrorLabel->setText(QString::fromStdString(""));
+		ui.phoneErrorLabel->setText(QString::fromStdString(""));
 
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/restaurant/" + to_string(getRestaurantId()) });
 
@@ -392,32 +397,74 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 			json j = json::parse(r.text);
 
 			if (profileEditedName) {
-				j["name"] = ui.nameLineEdit->text().toStdString();
+				string name = ui.nameLineEdit->text().toStdString();
+
+				if (!regex_match(name, regex(R"([a-zA-Z]{2,})"))) {
+					ui.nameErrorLabel->setText(QString::fromStdString("Insert a valid name!"));
+					error = true;
+				}
+				else {
+					j["name"] = name;
+				}
 			}
 			if (profileEditedAddress) {
-				j["address"] = ui.addressLineEdit->text().toStdString();
+				string address = ui.addressLineEdit->text().toStdString();
+
+				if (!regex_match(address, regex(R"([#.0-9a-zA-Z\s,-]+)"))) {
+					ui.addressErrorLabel->setText(QString::fromStdString("Insert a valid address!"));
+					error = true;
+				}
+				else {
+					j["address"] = address;
+				}
 			}
-			if (emailLineEdit) {
-				j["email"] = ui.emailLineEdit->text().toStdString();
+			if (profileEditedEmail) {
+				string email = ui.emailLineEdit->text().toStdString();
+
+				if (!regex_match(email, regex(R"(([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+))"))) {
+					ui.emailErrorLabel->setText(QString::fromStdString("Insert a valid email!"));
+					error = true;
+				}
+				else {
+					j["email"] = email;
+				}
 			}
 			if (profileEditedPsw) {
-				j["psw"] = ui.pswLineEdit->text().toStdString();
+				string psw = ui.pswLineEdit->text().toStdString();
+
+				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+					error = true;
+				}
+				else {
+					j["psw"] = sha256(psw);
+				}
 			}
 			if (profileEditedPhone) {
-				j["phone"] = ui.phoneLineEdit->text().toStdString();
+				string phone = ui.phoneLineEdit->text().toStdString();
+
+				if (!regex_match(phone, regex(R"(\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*)"))) {
+					ui.phoneErrorLabel->setText(QString::fromStdString("Insert a valid phone number!"));
+					error = true;
+				}
+				else {
+					j["phone"] = phone;
+				}
 			}
 
-			cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/restaurant/update" },
-				cpr::Body{ j.dump() },
-				cpr::Header{ { "Content-Type", "application/json" } });
+			if (!error) {
+				cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/restaurant/update" },
+					cpr::Body{ j.dump() },
+					cpr::Header{ { "Content-Type", "application/json" } });
 
-			if (rUpdate.status_code == 200) {
-				resetVariables();
-				QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
-				logoutUser();
-			}
-			else {
-				ui.errorProfileLabel->setText(QString::fromStdString("An error occour!"));
+				if (rUpdate.status_code == 200) {
+					resetVariables();
+					QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
+					logoutUser();
+				}
+				else {
+					ui.errorProfileLabel->setText(QString::fromStdString("Generic error!"));
+				}
 			}
 		}
 		else {
@@ -433,34 +480,71 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 
 void RestaurantGUI::on_addDishBtn_clicked() {
 	try {
+		boolean error = false;
 		ui.deleteDishLabel->setText(QString::fromStdString(""));
+		ui.dishNameErrorLabel->setText(QString::fromStdString(""));
+		ui.dishTypeErrorLabel->setText(QString::fromStdString(""));
+		ui.dishPriceErrorLabel->setText(QString::fromStdString(""));
 
 		json j;
-		j["name"] = ui.dishNameLineEdit->text().toStdString();
-		j["type"] = ui.dishTypeBox->currentIndex();
-		j["price"] = ui.dishPriceSpinBox->value();
-		j["restaurantId"] = to_string(getRestaurantId());
 
-		cpr::Response r;
-		// TODO: validation input fields
-		// Check if price is positive
-		if (j["price"] > 0) {
-			r = cpr::Post(cpr::Url{ serverUrl + "/dish/create" },
-				cpr::Body{ j.dump() },
-				cpr::Header{ { "Content-Type", "application/json" } });
-		}
-
-		if (r.status_code == 200) {
-			QMessageBox::information(this, "Login", QString::fromStdString("Dish add successfully to menu!"));
-
-			ui.dishNameLineEdit->setText(QString::fromStdString(""));
-			ui.dishTypeBox->setCurrentIndex(0);
-			ui.dishPriceSpinBox->setValue(0.0);
-
-			goToMenuTab();
+		string name = ui.dishNameLineEdit->text().toStdString();
+		if (!regex_match(name, regex(R"([#.a-zA-Z\s,-]+)"))) {
+			ui.dishNameErrorLabel->setText(QString::fromStdString("Inser a valid name!"));
+			error = true;
 		}
 		else {
-			ui.addDishLabel->setText(QString::fromStdString("An error occour!"));
+			j["name"] = name;
+		}
+
+		int type = ui.dishTypeBox->currentIndex();
+		string typeStd = to_string(type);
+		if (!regex_match(typeStd, regex(R"([0-4])"))) {
+			ui.dishTypeErrorLabel->setText(QString::fromStdString("Inser a valid type!"));
+			error = true;
+		}
+		else {
+			j["type"] = type;
+		}
+
+		double price = ui.dishPriceSpinBox->value();
+		string priceStd = to_string(price);
+		if (!regex_match(priceStd, regex(R"([1-9]\d*(.\d{1,6})?)"))) {
+			ui.dishPriceErrorLabel->setText(QString::fromStdString("Inser a valid price!"));
+			error = true;
+		}
+		else {
+			j["price"] = price;
+		}
+		
+		j["restaurantId"] = to_string(getRestaurantId());
+
+		if (!error) {
+			cpr::Response r;
+
+			// Check if price is positive
+			if (j["price"] > 0) {
+				r = cpr::Post(cpr::Url{ serverUrl + "/dish/create" },
+					cpr::Body{ j.dump() },
+					cpr::Header{ { "Content-Type", "application/json" } });
+			}
+
+			if (r.status_code == 200) {
+				QMessageBox::information(this, "Login", QString::fromStdString("Dish add successfully to menu!"));
+
+				ui.deleteDishLabel->setText(QString::fromStdString(""));
+				ui.dishNameErrorLabel->setText(QString::fromStdString(""));
+				ui.dishTypeErrorLabel->setText(QString::fromStdString(""));
+				ui.dishPriceErrorLabel->setText(QString::fromStdString(""));
+
+				ui.dishTypeBox->setCurrentIndex(0);
+				ui.dishPriceSpinBox->setValue(0.0);
+
+				goToMenuTab();
+			}
+			else {
+				ui.addDishLabel->setText(QString::fromStdString("An error occour!"));
+			}
 		}
 	}
 	catch (...) {

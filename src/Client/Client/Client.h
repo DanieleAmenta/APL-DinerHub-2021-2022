@@ -1,5 +1,9 @@
 #pragma once
 
+#include <iostream>
+#include <stdio.h>
+#include <cpr/cpr.h>
+
 #include <QtWidgets/QWidget>
 
 #include "ui_Client.h"
@@ -7,6 +11,17 @@
 #include "AdminGUI.h"
 #include "RestaurantGUI.h"
 #include "RegisterGUI.h"
+
+#include <QDialog>
+#include <QMessageBox>
+
+#include <regex>
+#include <nlohmann/json.hpp>
+
+#include "Utils.h"
+
+using json = nlohmann::json;
+using namespace std;
 
 class Client : public QWidget
 {

@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include "ui_UserGUI.h"
 
+#include <regex>
 #include <nlohmann/json.hpp>
 #include "SpinBoxDelegate.h"
 

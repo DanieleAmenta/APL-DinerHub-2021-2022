@@ -57,6 +57,9 @@ namespace Server.Controllers
                     var collection = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
                     var dbList = collection.Find(filter).FirstOrDefault();
 
+                    // Hide password
+                    dbList.Psw = "";
+
                     return Ok(dbList);
                 }
                 else
@@ -81,10 +84,8 @@ namespace Server.Controllers
         {
             try
             {
-                // TODO: encode password
                 if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(restaurant.Address.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(restaurant.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                    && Regex.IsMatch(restaurant.Address.ToString(), @"^[#.0-9a-zA-Z\s,-]+$")
                     && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
                     && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
                     )
@@ -142,8 +143,7 @@ namespace Server.Controllers
             try
             {
                     if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                        && Regex.IsMatch(restaurant.Address.ToString(), @"^[a-zA-Z]{2,}$")
-                        && Regex.IsMatch(restaurant.Psw.ToString(), @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$")
+                        && Regex.IsMatch(restaurant.Address.ToString(), @"^[#.0-9a-zA-Z\s,-]+$")
                         && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
                         && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
                         )
@@ -159,8 +159,12 @@ namespace Server.Controllers
                     {
                         // Email must be unique
                         var filterEmailRestaurant = Builders<Restaurant>.Filter.Eq("Email", restaurant.Email);
+                        var filterIdRestaurant = Builders<Restaurant>.Filter.Ne("RestaurantId", restaurant.RestaurantId);
+
+                        var combineFiltersEmail = Builders<Restaurant>.Filter.And(filterEmailRestaurant, filterIdRestaurant);
+
                         var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
-                        var dbListRestaurant = collectionRestaurant.Find(filterEmailRestaurant).FirstOrDefault();
+                        var dbListRestaurant = collectionRestaurant.Find(combineFiltersEmail).FirstOrDefault();
 
                         if (dbListRestaurant == null)
                         {
@@ -177,7 +181,7 @@ namespace Server.Controllers
                         }
                         else
                         {
-                            return BadRequest("Email already in use!");
+                            return BadRequest(dbListRestaurant);
                         }
                     }
                     else
