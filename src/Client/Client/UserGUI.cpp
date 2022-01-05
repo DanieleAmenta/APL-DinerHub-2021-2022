@@ -1,4 +1,5 @@
 #include "UserGUI.h"
+#include <QpixMap>
 
 UserGUI::UserGUI(QWidget* parent)
 	: QDialog(parent)
@@ -164,15 +165,6 @@ void UserGUI::on_emailLineEdit_textChanged(QString text) {
 	}
 }
 
-void UserGUI::on_pswLineEdit_textChanged(QString text) {
-	if (firstEditPsw) {
-		firstEditPsw = false;
-	}
-	else {
-		profileEditedPsw = true;
-	}
-}
-
 void UserGUI::on_phoneLineEdit_textChanged(QString text) {
 	if (firstEditPhone) {
 		firstEditPhone = false;
@@ -188,7 +180,7 @@ void UserGUI::on_updateProfileBtn_clicked() {
 		ui.errorProfileBalanceLabel->setText(QString::fromStdString(""));
 
 		ui.nameErrorLabel->setText(QString::fromStdString(""));
-		ui.addressErrorLabel->setText(QString::fromStdString(""));
+		ui.surnameErrorLabel->setText(QString::fromStdString(""));
 		ui.emailErrorLabel->setText(QString::fromStdString(""));
 		ui.pswErrorLabel->setText(QString::fromStdString(""));
 		ui.phoneErrorLabel->setText(QString::fromStdString(""));
@@ -232,17 +224,16 @@ void UserGUI::on_updateProfileBtn_clicked() {
 					j["email"] = email;
 				}
 			}
-			if (profileEditedPsw) {
-				string psw = ui.pswLineEdit->text().toStdString();
 
-				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
-					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
-					error = true;
-				}
-				else {
-					j["psw"] = sha256(psw);
-				}
+			string psw = ui.pswLineEdit->text().toStdString();
+			if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+				ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+				error = true;
 			}
+			else {
+				j["psw"] = sha256(psw);
+			}
+
 			if (profileEditedPhone) {
 				string phone = ui.phoneLineEdit->text().toStdString();
 
@@ -409,7 +400,6 @@ void UserGUI::goToProfileTab() {
 		profileEditedName = false;
 		profileEditedSurname = false;
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 		profileEditedPhone = false;
 
 		ui.UserInterface->setCurrentWidget(ui.Profile);
@@ -421,7 +411,7 @@ void UserGUI::goToProfileTab() {
 		ui.nameLineEdit->setText(QString::fromStdString(j["name"]));
 		ui.surnameLineEdit->setText(QString::fromStdString(j["surname"]));
 		ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-		ui.pswLineEdit->setText(QString::fromStdString(""));
+		ui.pswLineEdit->setText(QString::fromStdString("********"));
 		ui.phoneLineEdit->setText(QString::fromStdString(j["phone"]));
 		ui.dateLineEdit->setText(QString::fromStdString((j["birthDate"])));
 
@@ -440,6 +430,64 @@ void UserGUI::goToProfileTab() {
 
 void UserGUI::goToStatsTab() {
 	ui.UserInterface->setCurrentWidget(ui.Stats);
+	
+	ui.countOrderlineEdit->setText(QString::fromStdString(""));
+	ui.totalOrderlineEdit->setText(QString::fromStdString(""));
+	ui.favouriteRestaurantlineEdit->setText(QString::fromStdString(""));
+	ui.bestDishlineEdit->setText(QString::fromStdString(""));
+
+	cpr::Response countOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/countOrder/" + to_string(session_userId)});
+
+	json dataCountOrder = json::parse(countOrder.text);
+
+	if (countOrder.status_code == 200) {
+		ui.countOrderlineEdit->setText(QString::fromStdString(to_string(dataCountOrder["count"])));
+	}
+
+	cpr::Response totalOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/totalOrder/" + to_string(session_userId) });
+
+	json dataTotalOrder = json::parse(totalOrder.text);
+
+	if (totalOrder.status_code == 200) {
+		ui.totalOrderlineEdit->setText(QString::fromStdString(to_string(dataTotalOrder["count"])));
+	}
+
+	cpr::Response favouriteRestaurant = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/favoriteRestaurant/" + to_string(session_userId) });
+
+	json dataFavoriteRestaurant = json::parse(favouriteRestaurant.text);
+
+	if (favouriteRestaurant.status_code == 200) {
+		ui.favouriteRestaurantlineEdit->setText(QString::fromStdString(to_string(dataFavoriteRestaurant["name"])));
+	}
+	
+	cpr::Response bestDish = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/bestDish/" + to_string(session_userId) });
+
+	json dataBestDish = json::parse(bestDish.text);
+
+	if (bestDish.status_code == 200) {
+		ui.bestDishlineEdit->setText(QString::fromStdString(to_string(dataBestDish["id"])));
+	}
+
+	cpr::Response orderfordayofweek = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/orderfordayofweek/" + to_string(session_userId) });
+
+	json dataOrderfordayofweek = json::parse(orderfordayofweek.text);
+	string url = to_string(dataOrderfordayofweek["link"]);
+	url.erase(remove(url.begin(), url.end(), '"'), url.end());
+	if (orderfordayofweek.status_code == 200) {
+		QPixmap pix(url.c_str());
+		ui.orderfordayofweek->setPixmap(pix);
+	}
+
+	cpr::Response orderCost = cpr::Get(cpr::Url{ serverStatsUrl + "/userStats/orderCost/" + to_string(session_userId) });
+
+	json dataOrderCost = json::parse(orderCost.text);
+	string url1 = to_string(dataOrderCost["link"]);
+	url1.erase(remove(url1.begin(), url1.end(), '"'), url1.end());
+	if (orderCost.status_code == 200) {
+		QPixmap pix1(url1.c_str());
+		ui.orderCost->setPixmap(pix1);
+	}
+	
 }
 
 void UserGUI::logoutUser() {

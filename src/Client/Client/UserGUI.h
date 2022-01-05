@@ -47,13 +47,11 @@ private:
 	boolean firstEditName = true;
 	boolean firstEditSurname = true;
 	boolean firstEditEmail = true;
-	boolean firstEditPsw = true;
 	boolean firstEditPhone = true;
 
 	boolean profileEditedName = false;
 	boolean profileEditedSurname = false;
 	boolean profileEditedEmail = false;
-	boolean profileEditedPsw = false;
 	boolean profileEditedPhone = false;
 
 public:
@@ -102,13 +100,11 @@ public:
 		firstEditName = true;
 		firstEditSurname = true;
 		firstEditEmail = true;
-		firstEditPsw = true;
 		firstEditPhone = true;
 
 		profileEditedName = false;
 		profileEditedSurname = false;
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 		profileEditedPhone = false;
 	}
 
@@ -117,11 +113,10 @@ private slots:
 	void on_submitOrderBtn_clicked();
 
 	void on_updateBalanceBtn_clicked();
-
+	
 	void on_nameLineEdit_textChanged(QString text);
 	void on_surnameLineEdit_textChanged(QString text);
 	void on_emailLineEdit_textChanged(QString text);
-	void on_pswLineEdit_textChanged(QString text);
 	void on_phoneLineEdit_textChanged(QString text);
 
 	void on_updateProfileBtn_clicked();

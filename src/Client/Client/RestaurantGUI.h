@@ -41,13 +41,11 @@ private:
 	boolean firstEditName = true;
 	boolean firstEditAddress = true;
 	boolean firstEditEmail = true;
-	boolean firstEditPsw = true;
 	boolean firstEditPhone = true;
 
 	boolean profileEditedName = false;
 	boolean profileEditedAddress = false;
 	boolean profileEditedEmail = false;
-	boolean profileEditedPsw = false;
 	boolean profileEditedPhone = false;
 
 public:
@@ -108,13 +106,11 @@ public:
 		firstEditName = true;
 		firstEditAddress = true;
 		firstEditEmail = true;
-		firstEditPsw = true;
 		firstEditPhone = true;
 
 		profileEditedName = false;
 		profileEditedAddress = false;
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 		profileEditedPhone = false;
 	}
 
@@ -132,7 +128,6 @@ private slots:
 	void on_nameLineEdit_textChanged(QString text);
 	void on_addressLineEdit_textChanged(QString text);
 	void on_emailLineEdit_textChanged(QString text);
-	void on_pswLineEdit_textChanged(QString text);
 	void on_phoneLineEdit_textChanged(QString text);
 
 	// Orders To Prepare window navbar

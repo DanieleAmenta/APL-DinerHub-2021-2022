@@ -233,7 +233,7 @@ void RestaurantGUI::goToProfileTab() {
 		ui.nameLineEdit->setText(QString::fromStdString(j["name"]));
 		ui.addressLineEdit->setText(QString::fromStdString(j["address"]));
 		ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-		ui.pswLineEdit->setText(QString::fromStdString(""));
+		ui.pswLineEdit->setText(QString::fromStdString("********"));
 		ui.phoneLineEdit->setText(QString::fromStdString(j["phone"]));
 	}
 	catch (...) {
@@ -300,6 +300,72 @@ void RestaurantGUI::goToMenuTab() {
 
 void RestaurantGUI::goToStatsTab() {
 	ui.RestaurantInterface->setCurrentWidget(ui.Stats);
+
+	ui.orderReceivedlineEdit->setText(QString::fromStdString(""));
+	ui.totalOrderlineEdit->setText(QString::fromStdString(""));
+	ui.bestCustomerlineEdit->setText(QString::fromStdString(""));
+	ui.customerlineEdit->setText(QString::fromStdString(""));
+	ui.bestDishlineEdit->setText(QString::fromStdString(""));
+
+	cpr::Response orderReceived = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/orderReceived/" + to_string(session_restaurantId) });
+
+	json dataOrderReceived = json::parse(orderReceived.text);
+
+	if (orderReceived.status_code == 200) {
+		ui.orderReceivedlineEdit->setText(QString::fromStdString(to_string(dataOrderReceived["count"])));
+	}
+
+	cpr::Response totalOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/totalOrder/" + to_string(session_restaurantId) });
+
+	json dataTotalOrder = json::parse(totalOrder.text);
+
+	if (totalOrder.status_code == 200) {
+		ui.totalOrderlineEdit->setText(QString::fromStdString(to_string(dataTotalOrder["totalOrder"])));
+	}
+
+	cpr::Response bestCustomer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestCustomer/" + to_string(session_restaurantId) });
+
+	json dataBestCustomer = json::parse(bestCustomer.text);
+
+	if (totalOrder.status_code == 200) {
+		ui.bestCustomerlineEdit->setText(QString::fromStdString(to_string(dataBestCustomer["Name"])));
+	}
+
+	cpr::Response customer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/customer/" + to_string(session_restaurantId) });
+
+	json dataCustomer = json::parse(customer.text);
+
+	if (customer.status_code == 200) {
+		ui.customerlineEdit->setText(QString::fromStdString(to_string(dataCustomer["Customers"])));
+	}
+
+	cpr::Response bestDish = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestDish/" + to_string(session_restaurantId) });
+
+	json dataBestDish = json::parse(bestDish.text);
+
+	if (customer.status_code == 200) {
+		ui.bestDishlineEdit->setText(QString::fromStdString(to_string(dataBestDish["id"])));
+	}
+
+	cpr::Response plotOrdersForHour = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotOrderForHour/" + to_string(session_restaurantId) });
+
+	json dataPlotOrdersForHour = json::parse(plotOrdersForHour.text);
+	string url = to_string(dataPlotOrdersForHour["link"]);
+	url.erase(remove(url.begin(), url.end(), '"'), url.end());
+	if (plotOrdersForHour.status_code == 200) {
+		QPixmap pix(url.c_str());
+		ui.plotOrdersForHourRestaurant->setPixmap(pix);
+	}
+
+	cpr::Response plotAge = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotAge/" + to_string(session_restaurantId) });
+
+	json dataPlotAge = json::parse(plotAge.text);
+	string url1 = to_string(dataPlotAge["link"]);
+	url1.erase(remove(url1.begin(), url1.end(), '"'), url1.end());
+	if (plotAge.status_code == 200) {
+		QPixmap pix1(url1.c_str());
+		ui.plotAgeRestaurant->setPixmap(pix1);
+	}
 }
 
 void RestaurantGUI::logoutUser() {
@@ -429,17 +495,16 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 					j["email"] = email;
 				}
 			}
-			if (profileEditedPsw) {
-				string psw = ui.pswLineEdit->text().toStdString();
 
-				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
-					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
-					error = true;
-				}
-				else {
-					j["psw"] = sha256(psw);
-				}
+			string psw = ui.pswLineEdit->text().toStdString();
+			if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+				ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+				error = true;
 			}
+			else {
+				j["psw"] = sha256(psw);
+			}
+
 			if (profileEditedPhone) {
 				string phone = ui.phoneLineEdit->text().toStdString();
 
@@ -601,15 +666,6 @@ void RestaurantGUI::on_emailLineEdit_textChanged(QString text) {
 	}
 	else {
 		profileEditedEmail = true;
-	}
-}
-
-void RestaurantGUI::on_pswLineEdit_textChanged(QString text) {
-	if (firstEditPsw) {
-		firstEditPsw = false;
-	}
-	else {
-		profileEditedPsw = true;
 	}
 }
 

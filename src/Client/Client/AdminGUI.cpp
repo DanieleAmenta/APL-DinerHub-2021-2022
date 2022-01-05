@@ -1,4 +1,5 @@
 #include "AdminGUI.h"
+#include <QpixMap>
 
 AdminGUI::AdminGUI(QWidget* parent)
 	: QDialog(parent)
@@ -176,16 +177,14 @@ void AdminGUI::on_updateProfileBtn_clicked() {
 					j["email"] = email;
 				}
 			}
-			if (profileEditedPsw) {
-				string psw = ui.pswLineEdit->text().toStdString();
 
-				if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
-					ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
-					error = true;
-				}
-				else {
-					j["psw"] = sha256(psw);
-				}
+			string psw = ui.pswLineEdit->text().toStdString();
+			if (!regex_match(psw, regex(R"((?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,})"))) {
+				ui.pswErrorLabel->setText(QString::fromStdString("Insert a valid password!"));
+				error = true;
+			}
+			else {
+				j["psw"] = sha256(psw);
 			}
 
 			if (!error) {
@@ -220,15 +219,6 @@ void AdminGUI::on_emailLineEdit_textChanged(QString text) {
 	}
 	else {
 		profileEditedEmail = true;
-	}
-}
-
-void AdminGUI::on_pswLineEdit_textChanged(QString text) {
-	if (firstEditPsw) {
-		firstEditPsw = false;
-	}
-	else {
-		profileEditedPsw = true;
 	}
 }
 
@@ -350,7 +340,6 @@ void AdminGUI::goToProfileTab() {
 		ui.updateProfileError->setText(QString::fromStdString(""));
 
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 
 		ui.AdminInterface->setCurrentWidget(ui.Profile);
 
@@ -360,7 +349,7 @@ void AdminGUI::goToProfileTab() {
 
 		if (r.status_code == 200) {
 			ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
-			ui.pswLineEdit->setText(QString::fromStdString(""));
+			ui.pswLineEdit->setText(QString::fromStdString("********"));
 		}
 		else {
 			QMessageBox::warning(this, "Login", "Generic error. Please login again!");
@@ -375,6 +364,95 @@ void AdminGUI::goToProfileTab() {
 
 void AdminGUI::goToStatsTab() {
 	ui.AdminInterface->setCurrentWidget(ui.Stats);
+	ui.TotalCustomerlineEdit->setText(QString::fromStdString(""));
+	ui.TotalOrderlineEdit->setText(QString::fromStdString(""));
+	ui.TotalslineEdit->setText(QString::fromStdString(""));
+	ui.dailyOrderslineEdit->setText(QString::fromStdString(""));
+	ui.bestCustomerlineEdit->setText(QString::fromStdString(""));
+	ui.bestCustomerOfMonthEdit->setText(QString::fromStdString(""));
+	ui.topgrossinglineEdit->setText(QString::fromStdString(""));
+
+	try {
+		cpr::Response allUsers = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/allUsers"});
+
+		json dataAllUsers = json::parse(allUsers.text);
+
+		if (allUsers.status_code == 200) {
+			ui.TotalCustomerlineEdit->setText(QString::fromStdString(to_string(dataAllUsers["count"])));
+		}
+		
+		cpr::Response totalOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/totalOrder" });
+
+		json dataTotalOrder = json::parse(totalOrder.text);
+
+		if (totalOrder.status_code == 200) {
+			ui.TotalOrderlineEdit->setText(QString::fromStdString(to_string(dataTotalOrder["count"])));
+		}
+		
+		cpr::Response totals = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/totals" });
+
+		json dataTotals = json::parse(totals.text);
+
+		if (totals.status_code == 200) {
+			ui.TotalslineEdit->setText(QString::fromStdString(to_string(dataTotals["total"])));
+		}
+
+		cpr::Response dailyOrders = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/dailyOrders" });
+
+		json dataDailyOrders = json::parse(dailyOrders.text);
+
+		if (dailyOrders.status_code == 200) {
+			ui.dailyOrderslineEdit->setText(QString::fromStdString(to_string(dataDailyOrders["average"])));
+		}
+		
+		cpr::Response bestCustomer = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/bestCustomer" });
+
+		json dataBestCustomer = json::parse(bestCustomer.text);
+
+		if (bestCustomer.status_code == 200) {
+			ui.bestCustomerlineEdit->setText(QString::fromStdString(to_string(dataBestCustomer["name"])));
+		}
+		
+		cpr::Response bestCustomerOfMonth = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/bestCustomerOfMonth" });
+
+		json dataBestCustomerOfMonth = json::parse(bestCustomerOfMonth.text);
+
+		if (bestCustomerOfMonth.status_code == 200) {
+			ui.bestCustomerOfMonthEdit->setText(QString::fromStdString(to_string(dataBestCustomerOfMonth["name"])));
+		}
+		
+		cpr::Response topgrossing = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/topgrossing" });
+
+		json dataTopgrossing = json::parse(topgrossing.text);
+
+		if (topgrossing.status_code == 200) {
+			ui.topgrossinglineEdit->setText(QString::fromStdString(to_string(dataTopgrossing["name"])));
+		}
+
+		cpr::Response plotOrdersForHour = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/plotOrdersForHour"});
+
+		json dataPlotOrdersForHour = json::parse(plotOrdersForHour.text);
+		string url = to_string(dataPlotOrdersForHour["link"]);
+		url.erase(remove(url.begin(), url.end(), '"'), url.end());
+		if (plotOrdersForHour.status_code == 200) {
+			QPixmap pix(url.c_str());
+			ui.plotOrdersForHour->setPixmap(pix);
+		}
+
+		cpr::Response plotAge = cpr::Get(cpr::Url{ serverStatsUrl + "/adminStats/plotAge" });
+
+		json dataPlotAge = json::parse(plotAge.text);
+		string url1 = to_string(dataPlotAge["link"]);
+		url1.erase(remove(url1.begin(), url1.end(), '"'), url1.end());
+		if (plotAge.status_code == 200) {
+			QPixmap pix1(url1.c_str());
+			ui.plotAge->setPixmap(pix1);
+		}
+	}
+	catch (...) {
+		QMessageBox::warning(this, "Login", "Generic error. Please login again!");
+		logoutUser();
+	}
 }
 
 void AdminGUI::logoutUser() {
