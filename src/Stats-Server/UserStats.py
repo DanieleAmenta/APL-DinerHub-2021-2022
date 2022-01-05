@@ -5,29 +5,41 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import numpy as np
 import io
+import json
+
 connectionToMongo = pymongo.MongoClient("mongodb://localhost:27017/")
 softwareStartDate = date(2021, 12, 7)
+baseUrl = "C:/Users/danie/Desktop/definitivo/APL-DinerHub-2021-2022/src/Stats-Server/"
+subFolder = "images/"
 from __main__ import app
 
 @app.route('/userStats/countOrder/<UserId>')
 def show_countOrder(UserId):
     Database = connectionToMongo["dinerhub"]
     orders = Database["Order"]
+    data = {}
     id = int(UserId)
     critery = {"UserId": id}
     count = orders.count_documents(critery)
-    return f'{count}'
+    data["count"] = count
+    return data
 
 @app.route('/userStats/totalOrder/<UserId>')
 def show_countTotal(UserId):
     Database = connectionToMongo["dinerhub"]
     orders = Database["Order"]
+    data = {}
     id = int(UserId)
     critery = {"UserId": id}
     count = 0
+    check = orders.count_documents(critery)
+    if check == 0:
+        data["count"] = 0
+        return data
     for order in orders.find(critery):
         count = count + order["Totals"]
-    return f'{count}'
+    data["count"] = count
+    return data
 
 @app.route('/userStats/favoriteRestaurant/<UserId>')
 def show_favoriteRestaurant(UserId):
@@ -36,17 +48,22 @@ def show_favoriteRestaurant(UserId):
     restaurants = Database["Restaurant"]
     id = int(UserId)
     max = 0
+    data = {}
     for restaurant in restaurants.find():
         count = 0
-        idRestaurant = restaurant["id"]
+        idRestaurant = restaurant["RestaurantId"]
         critery = {"UserId": id, "RestaurantId": idRestaurant}
         count = orders.count_documents(critery)
+        if count == 0:
+            data["name"] = ""
+            return data
         if count > max:
             favoriteRestaurantId = idRestaurant
 
-    criteryId = {"id": favoriteRestaurantId}
+    criteryId = {"RestaurantId": favoriteRestaurantId}
     Restaurant = restaurants.find_one(criteryId)
-    return f'{Restaurant}'
+    data["name"] = Restaurant["Name"]
+    return data
 
 @app.route('/userStats/orderfordayofweek/<UserId>')
 def show_orderfordayofweek(UserId):
@@ -55,6 +72,10 @@ def show_orderfordayofweek(UserId):
     id = int(UserId)
     critery = {"UserId": id}
     countOne, countTwo, countThree, countFour, countFive, countSix, countSeven = 0, 0, 0, 0, 0, 0, 0
+    check = orders.count_documents(critery)
+    if check == 0:
+        data["link"] = baseUrl + subFolder + "loading.png"
+        return data
     for element in orders.find(critery):
         date = element["date"]
         day = date.weekday()
@@ -80,8 +101,12 @@ def show_orderfordayofweek(UserId):
     plt.xticks(x, ('Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'))
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
-
+    #return Response(output.getvalue(), mimetype='image/png')
+    data = {}
+    link = "orderfordayofweek" + UserId + ".png"
+    plt.savefig(subFolder + link, dpi=50)
+    data["link"] = baseUrl + subFolder + link
+    return data
 @app.route('/userStats/orderCost/<UserId>')
 def show_costOrder(UserId):
     connectionToMongo = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -92,6 +117,10 @@ def show_costOrder(UserId):
     x = []
     y = []
     i = 0
+    check = collection.count_documents(critery)
+    if check == 0:
+        data["link"] = baseUrl + subFolder + "loading.png"
+        return data
     for element in collection.find(critery):
         i = i + 1
         x.append(i)
@@ -105,8 +134,12 @@ def show_costOrder(UserId):
     output = io.BytesIO()
 
     FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
-
+    #return Response(output.getvalue(), mimetype='image/png')
+    data = {}
+    link = "orderCost" + UserId + ".png"
+    plt.savefig(subFolder + link, dpi=50)
+    data["link"] = baseUrl + subFolder + link
+    return data
 @app.route('/userStats/bestDish/<UserId>')
 def show_bestUserDish(UserId):
     Database = connectionToMongo["dinerhub"]
@@ -117,6 +150,11 @@ def show_bestUserDish(UserId):
     countDish = 0
     bestDish = 0
     dishDictionary = {}
+    data = {}
+    count = collection.count_documents(critery)
+    if count == 0:
+        data["id"] = ""
+        return data
     for element in collection.find(critery):
        orderDishes = element["Dishes"]
        for dishes in orderDishes:
@@ -133,5 +171,5 @@ def show_bestUserDish(UserId):
             countDish = dishDictionary[key]
             criteryDish = {"DishId" : key}
             bestDish = collectionDishes.find_one(criteryDish)
-    print(dishDictionary)
-    return f'{bestDish}'
+    data["id"] = bestDish["DishId"]
+    return data

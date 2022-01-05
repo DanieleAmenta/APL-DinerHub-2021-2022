@@ -41,10 +41,8 @@ private:
 	int session_deleteRestaurantId = 0;		// there is no restaurant with id equal to 0
 
 	boolean firstEditEmail = true;
-	boolean firstEditPsw = true;
 
 	boolean profileEditedEmail = false;
-	boolean profileEditedPsw = false;
 
 public:
 	AdminGUI(QWidget* parent = Q_NULLPTR);
@@ -98,10 +96,8 @@ public:
 
 	void resetVariables() {
 		firstEditEmail = true;
-		firstEditPsw = true;
 
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 	}
 
 private slots:
@@ -114,7 +110,6 @@ private slots:
 	void on_updateProfileBtn_clicked();
 
 	void on_emailLineEdit_textChanged(QString text);
-	void on_pswLineEdit_textChanged(QString text);
 
 	// User List window navbar
 	void on_restaurantListTab_clicked();

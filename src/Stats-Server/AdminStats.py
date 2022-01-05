@@ -5,8 +5,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import numpy as np
 import io
+import json
+
 connectionToMongo = pymongo.MongoClient("mongodb://localhost:27017/")
 softwareStartDate = date(2021, 12, 7)
+baseUrl = "C:/Users/danie/Desktop/definitivo/APL-DinerHub-2021-2022/src/Stats-Server/"
+subFolder = "images/"
+
 
 from __main__ import app
 #all customer in application
@@ -15,16 +20,20 @@ def show_users():
     Database = connectionToMongo["dinerhub"]
     collection = Database["User"]
     critery = {"IsAdmin": False}
+    data = {}
     count = collection.count_documents(critery)
-    return f'{count}'
+    data["count"] = count
+    return data
 
 #count total order all time
 @app.route('/adminStats/totalOrder')
 def show_totalOrder():
     Database = connectionToMongo["dinerhub"]
     collection = Database["Order"]
+    data = {}
     count = collection.count_documents({})
-    return f'{count}'
+    data["count"] = count
+    return data
 
 #count total order price
 @app.route('/adminStats/totals')
@@ -32,21 +41,29 @@ def show_totals():
     Database = connectionToMongo["dinerhub"]
     collection = Database["Order"]
     totals = 0
+    data = {}
+    count = collection.count_documents({})
+    if count == 0:
+        data["total"] = 0
+        return data
     for element in collection.find():
         totals = totals + element["Totals"]
-    return str(totals)
+    data["total"] = totals
+    return data
 
 #avg daily orders
 @app.route('/adminStats/dailyOrders')
 def show_dailyOrders():
     Database = connectionToMongo["dinerhub"]
     collection = Database["Order"]
+    data = {}
     count = collection.count_documents({})
     date_object = date.today()
     daysOfActivity = date_object - softwareStartDate
     daysCount = daysOfActivity.days
     average = count / daysCount
-    return f'{int(average)}'
+    data["average"] = int(average)
+    return data
 
 #customer who spend much money
 @app.route('/adminStats/bestCustomer')
@@ -56,9 +73,18 @@ def show_bestCustomer():
     users = Database["User"]
     ID = 0
     maxTotals = 0
+    data = {}
+    check = users.count_documents({})
+    if check == 0:
+        data["name"] = ""
+        return data
     for element in users.find():
         idCustomer = element["UserId"]
         critery = {"UserId": idCustomer}
+        checkTwo = users.count_documents(critery)
+        if checkTwo == 0:
+            data["name"] = ""
+            return data
         count = 0
         for x in orders.find(critery):
             count = count + x["Totals"]
@@ -67,8 +93,8 @@ def show_bestCustomer():
             ID = idCustomer
     bestCustomerID = {"UserId": ID}
     bestCustomer = users.find_one(bestCustomerID)
-
-    return f'{bestCustomer}'
+    data["name"] = bestCustomer["Name"]
+    return data
 
 @app.route('/adminStats/bestCustomerOfMonth')
 def show_bestCustomerMonth():
@@ -79,10 +105,19 @@ def show_bestCustomerMonth():
     currentMonth = date_object.month
     ID = 0
     maxTotals = 0
+    data = {}
+    check = users.count_documents({})
+    if check == 0:
+        data["name"] = ""
+        return data
     for element in users.find():
         idCustomer = element["UserId"]
         critery = {"UserId": idCustomer}
         count = 0
+        checkTwo = orders.count_documents(critery)
+        if checkTwo == 0:
+            data["name"] = ""
+            return data
         for order in orders.find(critery):
             today = order["date"]
             month = today.month
@@ -93,8 +128,9 @@ def show_bestCustomerMonth():
                     ID = idCustomer
     bestCustomerID = {"UserId": ID}
     bestCustomer = users.find_one(bestCustomerID)
-
-    return f'{bestCustomer}'
+    print(bestCustomer)
+    data["name"] = bestCustomer["Name"]
+    return data
 
 
 @app.route('/adminStats/topgrossing')
@@ -103,26 +139,42 @@ def show_topGrossing():
     collection = Database["Restaurant"]
     ID = 0
     maxTotals = 0
+    data = {}
+    check = collection.count_documents({})
+    if check == 0:
+        data["name"] = ""
+        return data
     for element in collection.find():
-        idRestaurant = element["id"]
+        idRestaurant = element["RestaurantId"]
         order = Database["Order"]
         critery = {"RestaurantId": idRestaurant}
+        checkTwo = order.count_documents(critery)
+        if checkTwo == 0:
+            data["name"] = ""
+            return data
         count = 0
         for x in order.find(critery):
             count = count + x["Totals"]
         if count > maxTotals:
             maxTotals = count
             ID = idRestaurant
-    bestRestaurant = {"id": ID}
+    bestRestaurant = {"RestaurantId": ID}
     Restaurant = collection.find_one(bestRestaurant)
-    name = Restaurant["name"]
-    return f'{name}'
+    name = Restaurant["Name"]
+    data["name"] = name
+    return data
+import base64
 
 @app.route('/adminStats/plotOrdersForHour')
 def show_plotOrderForHour():
     Database = connectionToMongo["dinerhub"]
     orders = Database["Order"]
+    data = {}
     countOne, countTwo, countThree, countFour, countFive, countSix = 0, 0, 0, 0, 0, 0
+    check = orders.count_documents({})
+    if check == 0:
+        data["link"] = baseUrl + subFolder + "loading.png"
+        return data
     for element in orders.find():
         date = element["date"]
         hour = date.hour
@@ -143,10 +195,20 @@ def show_plotOrderForHour():
     fig, ax = plt.subplots()
     plt.bar(x, countOrder)
     plt.xticks(x, ('18', '19', '20', '21', '22', '23'))
+    link = 'plotOrdersForHour.png'
+    plt.savefig(subFolder + link, dpi = 50)
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
-
+    data["link"] = baseUrl + subFolder + link
+    #my_stringIObytes = io.BytesIO()
+    #plt.savefig(my_stringIObytes, format='jpg')
+    #my_stringIObytes.seek(0)
+    #my_base64_jpgData = base64.b64encode(my_stringIObytes.read())
+    #data = {}
+    #data["test"] = my_base64_jpgData
+    #return my_base64_jpgData
+   # return Response(output.getvalue(), mimetype='image/png')
+    return data
 # Age Customer
 @app.route('/adminStats/plotAge')
 def show_plotAge():
@@ -154,6 +216,11 @@ def show_plotAge():
     Database = connectionToMongo["dinerhub"]
     collection = Database["User"]
     critery = {"IsAdmin": False}
+    data = {}
+    count = collection.count_documents(critery)
+    if count == 0:
+        data["link"] = baseUrl + subFolder + "loading.png"
+        return data
     countOne, countTwo, countThree, countFour, CountFive = 0, 0, 0, 0, 0
     for element in collection.find(critery):
         birthday = element["BirthDate"]
@@ -178,4 +245,8 @@ def show_plotAge():
 
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
+    link = "plotAge.png"
+    plt.savefig(subFolder + link, dpi=50)
+    data["link"] = baseUrl + subFolder + link
+    return data
+   ## return Response(output.getvalue(), mimetype='image/png')
