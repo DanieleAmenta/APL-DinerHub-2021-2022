@@ -1,15 +1,21 @@
 #include "Client.h"
-
+#include <QpixMap>
 Client::Client(QWidget* parent)
     : QWidget(parent)
 {
     ui.setupUi(this);
-
-    //TODO: ping ai server !!
+    
+    cpr::Response response = cpr::Get(cpr::Url{ serverPingUrl });
+    if (response.status_code != 200) {
+        QMessageBox::warning(this, "Fatal Error", "Server is not available. Please try later!");
+    }
 }
 
+/**
+* Flow to login a restaurant, an user or an admin
+*/
 void Client::on_loginButton_clicked()
-{
+{   
     boolean error = false;
     ui.emailError->setText(QString::fromStdString(""));
     ui.pswError->setText(QString::fromStdString(""));
@@ -38,44 +44,37 @@ void Client::on_loginButton_clicked()
         if (r.status_code == 200) {
             json j = json::parse(r.text);
 
-            if (j.contains("isAdmin")) {
-                bool isAdmin = j["isAdmin"];
+            if (j.contains("IsAdmin")) {
+                bool isAdmin = j["IsAdmin"];
 
                 if (isAdmin) {
-                    adminGUI = new AdminGUI(this);
+                    // Admin flow
+                    adminGUI = new AdminGUI(this, j["UserId"], j["Token"]);
 
                     ui.emailField->setText(QString::fromStdString(""));
                     ui.pswField->setText(QString::fromStdString(""));
-
-                    // Set session variable
-                    adminGUI->setAdminId(j["userId"]);
 
                     adminGUI->show();
                 }
                 else {
-                    userGUI = new UserGUI(this);
+                    // User flow
+                    userGUI = new UserGUI(this, j["UserId"], j["Token"]);
 
                     ui.emailField->setText(QString::fromStdString(""));
                     ui.pswField->setText(QString::fromStdString(""));
-
-                    // Set session variable
-                    userGUI->setUserId(j["userId"]);
 
                     userGUI->show();
                 }
             }
-            else if (j.contains("isRestaurant")) {
-                // All restaurants have isRestaurant set to true, but we do a double check
-                bool isRestaurant = j["isRestaurant"];
+            else if (j.contains("IsRestaurant")) {
+                // All restaurants have IsRestaurant set to true, but we do a double check
+                bool isRestaurant = j["IsRestaurant"];
 
                 if (isRestaurant) {
-                    restaurantGUI = new RestaurantGUI(this);
+                    restaurantGUI = new RestaurantGUI(this, j["RestaurantId"], j["Token"]);
 
                     ui.emailField->setText(QString::fromStdString(""));
                     ui.pswField->setText(QString::fromStdString(""));
-
-                    // Set session variable
-                    restaurantGUI->setRestaurantId(j["restaurantId"]);
 
                     restaurantGUI->show();
                 }
@@ -87,6 +86,9 @@ void Client::on_loginButton_clicked()
     }
 }
 
+/**
+* Open RegisterGUI interface
+*/
 void Client::on_registerButton_clicked() {
     registerGUI = new RegisterGUI();
 

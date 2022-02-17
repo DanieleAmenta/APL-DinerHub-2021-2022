@@ -35,6 +35,7 @@ private:
 	const int dishPriceCol = 3;
 
 	int session_restaurantId = 0;			// there is no restaurant with id equal to 0
+	string session_token = "";
 	int session_selectedOrderId = 0;		// there is no order with id equal to 0
 	int session_selectedDishId = 0;			// there is no dish with id equal to 0
 
@@ -49,11 +50,15 @@ private:
 	boolean profileEditedPhone = false;
 
 public:
-	RestaurantGUI(QWidget* parent = Q_NULLPTR);
+	RestaurantGUI(QWidget* parent = Q_NULLPTR, int RestaurantId = 0, string token = "");
 	~RestaurantGUI();
 
 	void setRestaurantId(int id) {
 		session_restaurantId = id;
+	}
+
+	void setToken(string token) {
+		session_token = token;
 	}
 
 	void setSelectedOrderId(int id) {
@@ -68,6 +73,10 @@ public:
 		return session_restaurantId;
 	}
 
+	string getToken() {
+		return session_token;
+	}
+
 	int getSelectedOrderId() {
 		return session_selectedOrderId;
 	}
@@ -78,6 +87,10 @@ public:
 
 	void resetRestaurantId() {
 		session_restaurantId = 0;
+	}
+
+	void resetToken() {
+		session_token = "";
 	}
 
 	void resetSelectedOrderId() {

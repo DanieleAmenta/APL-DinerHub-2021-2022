@@ -42,6 +42,7 @@ private:
 	const int orderStatusCol = 3;
 
 	int session_userId = 0;			// there is no user with id equal to 0
+	string session_token = "";
 	int session_restaurantId = 0;	// there is no restaurant with id equal to 0
 
 	boolean firstEditName = true;
@@ -55,13 +56,17 @@ private:
 	boolean profileEditedPhone = false;
 
 public:
-	UserGUI(QWidget* parent = Q_NULLPTR);
+	UserGUI(QWidget* parent = Q_NULLPTR, int UserId = 0, string token = "");
 	~UserGUI();
 
 	SpinBoxDelegate delegate;
 
 	void setUserId(int id) {
 		session_userId = id;
+	}
+
+	void setToken(string token) {
+		session_token = token;
 	}
 
 	void setRestaurantId(int id) {
@@ -72,12 +77,20 @@ public:
 		return session_userId;
 	}
 
+	string getToken() {
+		return session_token;
+	}
+
 	int getRestaurantId() {
 		return session_restaurantId;
 	}
 
 	void resetUserId() {
 		session_userId = 0;
+	}
+
+	void resetToken() {
+		session_token = "";
 	}
 
 	void resetRestaurantId() {

@@ -1,6 +1,6 @@
 #include "RestaurantGUI.h"
 
-RestaurantGUI::RestaurantGUI(QWidget* parent)
+RestaurantGUI::RestaurantGUI(QWidget* parent, int RestaurantId, string token)
 	: QDialog(parent)
 {
 	ui.setupUi(this);
@@ -11,6 +11,10 @@ RestaurantGUI::RestaurantGUI(QWidget* parent)
 	ui.ordersHistoryList->setSelectionBehavior(QTableView::SelectRows);
 	ui.dishesList->setSelectionBehavior(QTableView::SelectRows);
 
+	// Set session variable
+	this->setRestaurantId(RestaurantId);
+	this->setToken(token);
+
 	goToOrdersToPrepareTab();
 }
 
@@ -18,13 +22,17 @@ RestaurantGUI::~RestaurantGUI()
 {
 }
 
+/**
+* Go to OrdersToPrepare Tab and show all data
+*/
 void RestaurantGUI::goToOrdersToPrepareTab() {
 	try {
 		ui.RestaurantInterface->setCurrentWidget(ui.OrdersToPrepare);
 		ui.ordersToPrepareList->setRowCount(0);
 
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/order/restaurant/status" },
-			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "0"} });
+			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "0"} },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			json j = json::parse(r.text);
@@ -34,17 +42,18 @@ void RestaurantGUI::goToOrdersToPrepareTab() {
 				ui.ordersToPrepareList->insertRow(rowIndex);
 
 				QTableWidgetItem* orderId = new QTableWidgetItem();
-				orderId->setText(QString::fromStdString(to_string(order["orderId"])));
+				orderId->setText(QString::fromStdString(to_string(order["OrderId"])));
 				ui.ordersToPrepareList->setItem(rowIndex, orderIdCol, orderId);
 				orderId->setFlags(orderId->flags() & ~Qt::ItemIsEditable);
 
 				string userFullName = "";
-				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["userId"]) });
+				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["UserId"]) },
+					cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 				if (rUser.status_code == 200) {
 					json jUser = json::parse(rUser.text);
 
-					string userCleanName = to_string(jUser["name"]) + " " + to_string(jUser["surname"]);
+					string userCleanName = to_string(jUser["Name"]) + " " + to_string(jUser["Surname"]);
 
 					// remove " from name
 					userCleanName.erase(remove(userCleanName.begin(), userCleanName.end(), '"'), userCleanName.end());
@@ -60,12 +69,12 @@ void RestaurantGUI::goToOrdersToPrepareTab() {
 				orderUser->setFlags(orderUser->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderTotal = new QTableWidgetItem();
-				orderTotal->setText(QString::fromStdString(to_string(order["total"])));
+				orderTotal->setText(QString::fromStdString(to_string(order["Total"])));
 				ui.ordersToPrepareList->setItem(rowIndex, orderTotalCol, orderTotal);
 				orderTotal->setFlags(orderTotal->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderStatus = new QTableWidgetItem();
-				orderStatus->setText(QString::fromStdString(getOrderStatus(order["status"])));
+				orderStatus->setText(QString::fromStdString(getOrderStatus(order["Status"])));
 				ui.ordersToPrepareList->setItem(rowIndex, orderStatusCol, orderStatus);
 				orderStatus->setFlags(orderStatus->flags() & ~Qt::ItemIsEditable);
 
@@ -73,7 +82,7 @@ void RestaurantGUI::goToOrdersToPrepareTab() {
 			}
 		}
 		else {
-			// QMessageBox::warning(this, "Login", "Generic error. Please login again!");
+			QMessageBox::warning(this, "Login", "Generic error. Please login again!");
 			logoutUser();
 		}
 	}
@@ -83,13 +92,17 @@ void RestaurantGUI::goToOrdersToPrepareTab() {
 	}
 }
 
+/**
+* Go to OrdersToCollect Tab and show all data
+*/
 void RestaurantGUI::goToOrdersToCollectTab() {
 	ui.RestaurantInterface->setCurrentWidget(ui.OrdersToCollect);
 	ui.ordersToCollectList->setRowCount(0);
 
 	try {
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/order/restaurant/status" },
-			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "1"} });
+			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "1"} },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			json j = json::parse(r.text);
@@ -99,17 +112,18 @@ void RestaurantGUI::goToOrdersToCollectTab() {
 				ui.ordersToCollectList->insertRow(rowIndex);
 
 				QTableWidgetItem* orderId = new QTableWidgetItem();
-				orderId->setText(QString::fromStdString(to_string(order["orderId"])));
+				orderId->setText(QString::fromStdString(to_string(order["OrderId"])));
 				ui.ordersToCollectList->setItem(rowIndex, orderIdCol, orderId);
 				orderId->setFlags(orderId->flags() & ~Qt::ItemIsEditable);
 
 				string userFullName = "";
-				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["userId"]) });
+				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["UserId"]) },
+					cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 				if (rUser.status_code == 200) {
 					json jUser = json::parse(rUser.text);
 
-					string userCleanName = to_string(jUser["name"]) + " " + to_string(jUser["surname"]);
+					string userCleanName = to_string(jUser["Name"]) + " " + to_string(jUser["Surname"]);
 
 					// remove " from name
 					userCleanName.erase(remove(userCleanName.begin(), userCleanName.end(), '"'), userCleanName.end());
@@ -125,12 +139,12 @@ void RestaurantGUI::goToOrdersToCollectTab() {
 				orderUser->setFlags(orderUser->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderTotal = new QTableWidgetItem();
-				orderTotal->setText(QString::fromStdString(to_string(order["total"])));
+				orderTotal->setText(QString::fromStdString(to_string(order["Total"])));
 				ui.ordersToCollectList->setItem(rowIndex, orderTotalCol, orderTotal);
 				orderTotal->setFlags(orderTotal->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderStatus = new QTableWidgetItem();
-				orderStatus->setText(QString::fromStdString(getOrderStatus(order["status"])));
+				orderStatus->setText(QString::fromStdString(getOrderStatus(order["Status"])));
 				ui.ordersToCollectList->setItem(rowIndex, orderStatusCol, orderStatus);
 				orderStatus->setFlags(orderStatus->flags() & ~Qt::ItemIsEditable);
 
@@ -148,13 +162,17 @@ void RestaurantGUI::goToOrdersToCollectTab() {
 	}
 }
 
+/**
+* Go to OrderHistory Tab and show all data about old orders
+*/
 void RestaurantGUI::goToOrdersHistoryTab() {
 	ui.RestaurantInterface->setCurrentWidget(ui.OrdersHistory);
 	ui.ordersHistoryList->setRowCount(0);
 
 	try {
 		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/order/restaurant/status" },
-			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "2"} });
+			cpr::Parameters{ {"id", to_string(getRestaurantId())}, {"status", "2"} },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			json j = json::parse(r.text);
@@ -164,17 +182,18 @@ void RestaurantGUI::goToOrdersHistoryTab() {
 				ui.ordersHistoryList->insertRow(rowIndex);
 
 				QTableWidgetItem* orderId = new QTableWidgetItem();
-				orderId->setText(QString::fromStdString(to_string(order["orderId"])));
+				orderId->setText(QString::fromStdString(to_string(order["OrderId"])));
 				ui.ordersHistoryList->setItem(rowIndex, orderIdCol, orderId);
 				orderId->setFlags(orderId->flags() & ~Qt::ItemIsEditable);
 
 				string userFullName = "";
-				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["userId"]) });
+				cpr::Response rUser = cpr::Get(cpr::Url{ serverUrl + "/user/" + to_string(order["UserId"]) },
+					cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 				if (rUser.status_code == 200) {
 					json jUser = json::parse(rUser.text);
 
-					string userCleanName = to_string(jUser["name"]) + " " + to_string(jUser["surname"]);
+					string userCleanName = to_string(jUser["Name"]) + " " + to_string(jUser["Surname"]);
 
 					// remove " from name
 					userCleanName.erase(remove(userCleanName.begin(), userCleanName.end(), '"'), userCleanName.end());
@@ -190,12 +209,12 @@ void RestaurantGUI::goToOrdersHistoryTab() {
 				orderUser->setFlags(orderUser->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderTotal = new QTableWidgetItem();
-				orderTotal->setText(QString::fromStdString(to_string(order["total"])));
+				orderTotal->setText(QString::fromStdString(to_string(order["Total"])));
 				ui.ordersHistoryList->setItem(rowIndex, orderTotalCol, orderTotal);
 				orderTotal->setFlags(orderTotal->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* orderStatus = new QTableWidgetItem();
-				orderStatus->setText(QString::fromStdString(getOrderStatus(order["status"])));
+				orderStatus->setText(QString::fromStdString(getOrderStatus(order["Status"])));
 				ui.ordersHistoryList->setItem(rowIndex, orderStatusCol, orderStatus);
 				orderStatus->setFlags(orderStatus->flags() & ~Qt::ItemIsEditable);
 
@@ -226,15 +245,16 @@ void RestaurantGUI::goToProfileTab() {
 
 		ui.RestaurantInterface->setCurrentWidget(ui.Profile);
 
-		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/restaurant/" + to_string(getRestaurantId()) });
+		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/restaurant/" + to_string(getRestaurantId()) },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		json j = json::parse(r.text);
 
-		ui.nameLineEdit->setText(QString::fromStdString(j["name"]));
-		ui.addressLineEdit->setText(QString::fromStdString(j["address"]));
-		ui.emailLineEdit->setText(QString::fromStdString(j["email"]));
+		ui.nameLineEdit->setText(QString::fromStdString(j["Name"]));
+		ui.addressLineEdit->setText(QString::fromStdString(j["Address"]));
+		ui.emailLineEdit->setText(QString::fromStdString(j["Email"]));
 		ui.pswLineEdit->setText(QString::fromStdString("********"));
-		ui.phoneLineEdit->setText(QString::fromStdString(j["phone"]));
+		ui.phoneLineEdit->setText(QString::fromStdString(j["Phone"]));
 	}
 	catch (...) {
 		QMessageBox::warning(this, "Login", "Generic error. Please login again!");
@@ -242,6 +262,10 @@ void RestaurantGUI::goToProfileTab() {
 	}
 }
 
+/**
+* Go to Menu Tab and show all data
+* This tab allows you to modify the menu and add new dishes
+*/
 void RestaurantGUI::goToMenuTab() {
 	try {
 		ui.addDishLabel->setText(QString::fromStdString(""));
@@ -255,7 +279,8 @@ void RestaurantGUI::goToMenuTab() {
 		ui.addDishLabel->setText(QString::fromStdString(""));
 		ui.dishPriceSpinBox->setValue(0.00);
 
-		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/dish/restaurant/" + to_string(getRestaurantId()) });
+		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/dish/restaurant/" + to_string(getRestaurantId()) },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			json j = json::parse(r.text);
@@ -265,22 +290,22 @@ void RestaurantGUI::goToMenuTab() {
 				ui.dishesList->insertRow(rowIndex);
 
 				QTableWidgetItem* dishId = new QTableWidgetItem();
-				dishId->setText(QString::fromStdString(to_string(dish["dishId"])));
+				dishId->setText(QString::fromStdString(to_string(dish["DishId"])));
 				ui.dishesList->setItem(rowIndex, dishIdCol, dishId);
 				dishId->setFlags(dishId->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* dishName = new QTableWidgetItem();
-				dishName->setText(QString::fromStdString(dish["name"]));
+				dishName->setText(QString::fromStdString(dish["Name"]));
 				ui.dishesList->setItem(rowIndex, dishNameCol, dishName);
 				dishName->setFlags(dishName->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* dishType = new QTableWidgetItem();
-				dishType->setText(QString::fromStdString(getDishType(dish["type"])));
+				dishType->setText(QString::fromStdString(getDishType(dish["Type"])));
 				ui.dishesList->setItem(rowIndex, dishTypeCol, dishType);
 				dishType->setFlags(dishType->flags() & ~Qt::ItemIsEditable);
 
 				QTableWidgetItem* dishPrice = new QTableWidgetItem();
-				dishPrice->setText(QString::fromStdString(to_string(dish["price"])));
+				dishPrice->setText(QString::fromStdString(to_string(dish["Price"])));
 				ui.dishesList->setItem(rowIndex, dishPriceCol, dishPrice);
 				dishPrice->setFlags(dishPrice->flags() & ~Qt::ItemIsEditable);
 
@@ -301,70 +326,106 @@ void RestaurantGUI::goToMenuTab() {
 void RestaurantGUI::goToStatsTab() {
 	ui.RestaurantInterface->setCurrentWidget(ui.Stats);
 
-	ui.orderReceivedlineEdit->setText(QString::fromStdString(""));
-	ui.totalOrderlineEdit->setText(QString::fromStdString(""));
-	ui.bestCustomerlineEdit->setText(QString::fromStdString(""));
-	ui.customerlineEdit->setText(QString::fromStdString(""));
-	ui.bestDishlineEdit->setText(QString::fromStdString(""));
+	ui.orderReceivedLineEdit->setText(QString::fromStdString(""));
+	ui.totalOrderLineEdit->setText(QString::fromStdString(""));
+	ui.bestCustomerLineEdit->setText(QString::fromStdString(""));
+	ui.customerLineEdit->setText(QString::fromStdString(""));
+	ui.bestDishLineEdit->setText(QString::fromStdString(""));
 
-	cpr::Response orderReceived = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/orderReceived/" + to_string(session_restaurantId) });
+	try {
 
-	json dataOrderReceived = json::parse(orderReceived.text);
+		cpr::Response pingResponse = cpr::Get(cpr::Url{ serverStatsUrl + "/ping" });
 
-	if (orderReceived.status_code == 200) {
-		ui.orderReceivedlineEdit->setText(QString::fromStdString(to_string(dataOrderReceived["count"])));
+		if (pingResponse.status_code == 200) {
+			// Returns the number of orders receveid by a restaurant
+			cpr::Response orderReceived = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/orderReceived/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (orderReceived.status_code == 200) {
+				json dataOrderReceived = json::parse(orderReceived.text);
+
+				ui.orderReceivedLineEdit->setText(QString::fromStdString(to_string(dataOrderReceived["count"])));
+			}
+
+			// Returns the total revenue of a restaurant
+			cpr::Response totalOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/totalOrder/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (totalOrder.status_code == 200) {
+				json dataTotalOrder = json::parse(totalOrder.text);
+
+				string total = to_string(dataTotalOrder["totalOrder"]);
+				total.erase(remove(total.begin(), total.end(), '"'), total.end());
+				ui.totalOrderLineEdit->setText(QString::fromStdString(total));
+			}
+
+			// Returns the user who spent the most money in a restaurant
+			cpr::Response bestCustomer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestCustomer/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (totalOrder.status_code == 200) {
+				json dataBestCustomer = json::parse(bestCustomer.text);
+
+				string bestCustomer = to_string(dataBestCustomer["Name"]);
+				bestCustomer.erase(remove(bestCustomer.begin(), bestCustomer.end(), '"'), bestCustomer.end());
+				ui.bestCustomerLineEdit->setText(QString::fromStdString(bestCustomer));
+			}
+
+			// Returns the number of customers who placed their order in a restaurant
+			cpr::Response customer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/customer/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (customer.status_code == 200) {
+				json dataCustomer = json::parse(customer.text);
+
+				ui.customerLineEdit->setText(QString::fromStdString(to_string(dataCustomer["Customers"])));
+			}
+
+			// Returns the the best-selling dish of a restaurant
+			cpr::Response bestDish = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestDish/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (customer.status_code == 200) {
+				json dataBestDish = json::parse(bestDish.text);
+
+				string bestDish = to_string(dataBestDish["name"]);
+				bestDish.erase(remove(bestDish.begin(), bestDish.end(), '"'), bestDish.end());
+				ui.bestDishLineEdit->setText(QString::fromStdString(bestDish));
+			}
+
+			// Returns a graph showing the time slot with the most receipts for a restaurant
+			cpr::Response plotOrdersForHour = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotOrderForHour/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+						
+			if (plotOrdersForHour.status_code == 200) {
+				json dataPlotOrdersForHour = json::parse(plotOrdersForHour.text);
+				string url = to_string(dataPlotOrdersForHour["link"]);
+				url.erase(remove(url.begin(), url.end(), '"'), url.end());
+
+				QPixmap pix(url.c_str());
+				ui.plotOrdersForHourRestaurant->setPixmap(pix);
+			}
+
+			// Returns a graph showing the average age of customers of a restaurant
+			cpr::Response plotAge = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotAge/" + to_string(session_restaurantId) },
+				cpr::Parameters{ {"token", getToken()} });
+
+			if (plotAge.status_code == 200) {
+				json dataPlotAge = json::parse(plotAge.text);
+				string url1 = to_string(dataPlotAge["link"]);
+				url1.erase(remove(url1.begin(), url1.end(), '"'), url1.end());
+
+				QPixmap pix1(url1.c_str());
+				ui.plotAgeRestaurant->setPixmap(pix1);
+			}
+		}
+		else {
+			QMessageBox::warning(this, "Fatal Error", "Stats server is not available. Please try later!");
+		}
 	}
-
-	cpr::Response totalOrder = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/totalOrder/" + to_string(session_restaurantId) });
-
-	json dataTotalOrder = json::parse(totalOrder.text);
-
-	if (totalOrder.status_code == 200) {
-		ui.totalOrderlineEdit->setText(QString::fromStdString(to_string(dataTotalOrder["totalOrder"])));
-	}
-
-	cpr::Response bestCustomer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestCustomer/" + to_string(session_restaurantId) });
-
-	json dataBestCustomer = json::parse(bestCustomer.text);
-
-	if (totalOrder.status_code == 200) {
-		ui.bestCustomerlineEdit->setText(QString::fromStdString(to_string(dataBestCustomer["Name"])));
-	}
-
-	cpr::Response customer = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/customer/" + to_string(session_restaurantId) });
-
-	json dataCustomer = json::parse(customer.text);
-
-	if (customer.status_code == 200) {
-		ui.customerlineEdit->setText(QString::fromStdString(to_string(dataCustomer["Customers"])));
-	}
-
-	cpr::Response bestDish = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/bestDish/" + to_string(session_restaurantId) });
-
-	json dataBestDish = json::parse(bestDish.text);
-
-	if (customer.status_code == 200) {
-		ui.bestDishlineEdit->setText(QString::fromStdString(to_string(dataBestDish["id"])));
-	}
-
-	cpr::Response plotOrdersForHour = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotOrderForHour/" + to_string(session_restaurantId) });
-
-	json dataPlotOrdersForHour = json::parse(plotOrdersForHour.text);
-	string url = to_string(dataPlotOrdersForHour["link"]);
-	url.erase(remove(url.begin(), url.end(), '"'), url.end());
-	if (plotOrdersForHour.status_code == 200) {
-		QPixmap pix(url.c_str());
-		ui.plotOrdersForHourRestaurant->setPixmap(pix);
-	}
-
-	cpr::Response plotAge = cpr::Get(cpr::Url{ serverStatsUrl + "/restaurantStats/plotAge/" + to_string(session_restaurantId) });
-
-	json dataPlotAge = json::parse(plotAge.text);
-	string url1 = to_string(dataPlotAge["link"]);
-	url1.erase(remove(url1.begin(), url1.end(), '"'), url1.end());
-	if (plotAge.status_code == 200) {
-		QPixmap pix1(url1.c_str());
-		ui.plotAgeRestaurant->setPixmap(pix1);
+	catch (...) {
+		QMessageBox::warning(this, "Login", "Generic error. Please login again!");
+		logoutUser();
 	}
 }
 
@@ -376,6 +437,9 @@ void RestaurantGUI::logoutUser() {
 	close();
 }
 
+/**
+* Save the selected Order ID in a variable
+*/
 void RestaurantGUI::on_ordersToPrepareList_cellClicked(int row, int column) {
 	QString orderSelectedId = ui.ordersToPrepareList->item(row, orderIdCol)->text();
 	string orderSelectedIdStd = orderSelectedId.toStdString();
@@ -384,6 +448,9 @@ void RestaurantGUI::on_ordersToPrepareList_cellClicked(int row, int column) {
 	setSelectedOrderId(stoi(orderSelectedIdStd));
 }
 
+/**
+* Save the selected Order ID in a variable
+*/
 void RestaurantGUI::on_ordersToCollectList_cellClicked(int row, int column) {
 	QString orderSelectedId = ui.ordersToCollectList->item(row, orderIdCol)->text();
 	string orderSelectedIdStd = orderSelectedId.toStdString();
@@ -392,6 +459,9 @@ void RestaurantGUI::on_ordersToCollectList_cellClicked(int row, int column) {
 	setSelectedOrderId(stoi(orderSelectedIdStd));
 }
 
+/**
+* Save the selected Dish ID in a variable
+*/
 void RestaurantGUI::on_dishesList_cellClicked(int row, int column) {
 	QString dishSelectedId = ui.dishesList->item(row, orderIdCol)->text();
 	string dishSelectedIdStd = dishSelectedId.toStdString();
@@ -400,11 +470,15 @@ void RestaurantGUI::on_dishesList_cellClicked(int row, int column) {
 	setSelectedDishId(stoi(dishSelectedIdStd));
 }
 
+/**
+* Change the order status to "ReadyToPickup"
+*/
 void RestaurantGUI::on_readyToCollectBtn_clicked() {
 	try {
 		string selectedOrderIdStd = to_string(getSelectedOrderId());
 		cpr::Response r = cpr::Patch(cpr::Url{ serverUrl + "/order/update/status" },
-			cpr::Parameters{ {"id", selectedOrderIdStd}, {"status", "1"} });
+			cpr::Parameters{ {"id", selectedOrderIdStd}, {"status", "1"} },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			QMessageBox::information(this, "Order", "Order status successfully!");
@@ -423,11 +497,15 @@ void RestaurantGUI::on_readyToCollectBtn_clicked() {
 	}
 }
 
+/**
+* Change the order status to "Collected"
+*/
 void RestaurantGUI::on_collectedBtn_clicked() {
 	try {
 		string selectedOrderIdStd = to_string(getSelectedOrderId());
 		cpr::Response r = cpr::Patch(cpr::Url{ serverUrl + "/order/update/status" },
-			cpr::Parameters{ {"id", selectedOrderIdStd}, {"status", "2"} });
+			cpr::Parameters{ {"id", selectedOrderIdStd}, {"status", "2"} },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			QMessageBox::information(this, "Order", "Order status successfully!");
@@ -446,6 +524,9 @@ void RestaurantGUI::on_collectedBtn_clicked() {
 	}
 }
 
+/**
+* Update restaurant profile (name, email, password, etc.)
+*/
 void RestaurantGUI::on_updateProfileBtn_clicked() {
 	try {
 		boolean error = false;
@@ -457,10 +538,12 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 		ui.pswErrorLabel->setText(QString::fromStdString(""));
 		ui.phoneErrorLabel->setText(QString::fromStdString(""));
 
-		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/restaurant/" + to_string(getRestaurantId()) });
+		cpr::Response r = cpr::Get(cpr::Url{ serverUrl + "/restaurant/" + to_string(getRestaurantId()) },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			json j = json::parse(r.text);
+			j.erase(j.find("Id"));
 
 			if (profileEditedName) {
 				string name = ui.nameLineEdit->text().toStdString();
@@ -470,7 +553,7 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 					error = true;
 				}
 				else {
-					j["name"] = name;
+					j["Name"] = name;
 				}
 			}
 			if (profileEditedAddress) {
@@ -481,7 +564,7 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 					error = true;
 				}
 				else {
-					j["address"] = address;
+					j["Address"] = address;
 				}
 			}
 			if (profileEditedEmail) {
@@ -492,7 +575,7 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 					error = true;
 				}
 				else {
-					j["email"] = email;
+					j["Email"] = email;
 				}
 			}
 
@@ -502,7 +585,9 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 				error = true;
 			}
 			else {
-				j["psw"] = sha256(psw);
+				// If the password passes regex validation, it will be encrypted with SHA256 algorithm
+				// It's mandatory to insert a password when admin need to update his profile
+				j["Psw"] = sha256(psw);
 			}
 
 			if (profileEditedPhone) {
@@ -520,9 +605,11 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 			if (!error) {
 				cpr::Response rUpdate = cpr::Put(cpr::Url{ serverUrl + "/restaurant/update" },
 					cpr::Body{ j.dump() },
-					cpr::Header{ { "Content-Type", "application/json" } });
+					cpr::Header{ { "Content-Type", "application/json" }, {"Authorization", "Bearer " + getToken()} });
 
 				if (rUpdate.status_code == 200) {
+					// Logout the restaurant as it may have changed his password
+
 					resetVariables();
 					QMessageBox::information(this, "Login", QString::fromStdString(rUpdate.text) + " - Please, login again!");
 					logoutUser();
@@ -543,6 +630,9 @@ void RestaurantGUI::on_updateProfileBtn_clicked() {
 	}
 }
 
+/**
+* Add a new dish to Restaurant Menu
+*/
 void RestaurantGUI::on_addDishBtn_clicked() {
 	try {
 		boolean error = false;
@@ -559,7 +649,7 @@ void RestaurantGUI::on_addDishBtn_clicked() {
 			error = true;
 		}
 		else {
-			j["name"] = name;
+			j["Name"] = name;
 		}
 
 		int type = ui.dishTypeBox->currentIndex();
@@ -569,7 +659,7 @@ void RestaurantGUI::on_addDishBtn_clicked() {
 			error = true;
 		}
 		else {
-			j["type"] = type;
+			j["Type"] = type;
 		}
 
 		double price = ui.dishPriceSpinBox->value();
@@ -579,19 +669,19 @@ void RestaurantGUI::on_addDishBtn_clicked() {
 			error = true;
 		}
 		else {
-			j["price"] = price;
+			j["Price"] = price;
 		}
 		
-		j["restaurantId"] = to_string(getRestaurantId());
+		j["RestaurantId"] = to_string(getRestaurantId());
 
 		if (!error) {
 			cpr::Response r;
 
 			// Check if price is positive
-			if (j["price"] > 0) {
+			if (j["Price"] > 0) {
 				r = cpr::Post(cpr::Url{ serverUrl + "/dish/create" },
 					cpr::Body{ j.dump() },
-					cpr::Header{ { "Content-Type", "application/json" } });
+					cpr::Header{ { "Content-Type", "application/json" }, {"Authorization", "Bearer " + getToken()} });
 			}
 
 			if (r.status_code == 200) {
@@ -618,10 +708,14 @@ void RestaurantGUI::on_addDishBtn_clicked() {
 	}
 }
 
+/**
+* Delete selected dish from Restaurant Menu
+*/
 void RestaurantGUI::on_deleteDishBtn_clicked() {
 	try {
 		string selectedDishIdStd = to_string(getSelectedDishId());
-		cpr::Response r = cpr::Delete(cpr::Url{ serverUrl + "/dish/delete/" + selectedDishIdStd });
+		cpr::Response r = cpr::Delete(cpr::Url{ serverUrl + "/dish/delete/" + selectedDishIdStd },
+			cpr::Header{ {"Authorization", "Bearer " + getToken()} });
 
 		if (r.status_code == 200) {
 			QMessageBox::information(this, "Delete", "Dish delete successfully!");
@@ -642,6 +736,10 @@ void RestaurantGUI::on_deleteDishBtn_clicked() {
 	}
 }
 
+/**
+* If the restaurant changes his name, the event is captured by this function
+* and written in a variable
+*/
 void RestaurantGUI::on_nameLineEdit_textChanged(QString text) {
 	if (firstEditName) {
 		firstEditName = false;
@@ -651,6 +749,10 @@ void RestaurantGUI::on_nameLineEdit_textChanged(QString text) {
 	}
 }
 
+/**
+* If the restaurant changes his address, the event is captured by this function
+* and written in a variable
+*/
 void RestaurantGUI::on_addressLineEdit_textChanged(QString text) {
 	if (firstEditAddress) {
 		firstEditAddress = false;
@@ -660,6 +762,10 @@ void RestaurantGUI::on_addressLineEdit_textChanged(QString text) {
 	}
 }
 
+/**
+* If the restaurant changes his email, the event is captured by this function
+* and written in a variable
+*/
 void RestaurantGUI::on_emailLineEdit_textChanged(QString text) {
 	if (firstEditEmail) {
 		firstEditEmail = false;
@@ -669,6 +775,10 @@ void RestaurantGUI::on_emailLineEdit_textChanged(QString text) {
 	}
 }
 
+/**
+* If the restaurant changes his phone, the event is captured by this function
+* and written in a variable
+*/
 void RestaurantGUI::on_phoneLineEdit_textChanged(QString text) {
 	if (firstEditPhone) {
 		firstEditPhone = false;

@@ -1,5 +1,8 @@
 #include "Utils.h"
 
+/**
+* Returns the string, based on the order status code
+*/
 string getOrderStatus(int status) {
 	switch (status) {
 	case 0: return "Created";
@@ -13,6 +16,9 @@ string getOrderStatus(int status) {
 	}
 }
 
+/**
+* Returns the string, based on the dish type
+*/
 string getDishType(int type) {
 	switch (type) {
 	case 0: return "Appetizer";
@@ -30,6 +36,9 @@ string getDishType(int type) {
 	}
 }
 
+/**
+* SHA256 Encoding
+*/
 string sha256(const string str)
 {
 	unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -42,5 +51,13 @@ string sha256(const string str)
 	{
 		ss << hex << setw(2) << setfill('0') << (int)hash[i];
 	}
+	return ss.str();
+}
+
+string currentISO8601TimeUTC() {
+	auto now = chrono::system_clock::now();
+	auto itt = chrono::system_clock::to_time_t(now);
+	ostringstream ss;
+	ss << put_time(gmtime(&itt), "%FT%TZ");
 	return ss.str();
 }
