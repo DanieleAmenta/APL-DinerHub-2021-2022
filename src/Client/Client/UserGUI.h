@@ -42,28 +42,31 @@ private:
 	const int orderStatusCol = 3;
 
 	int session_userId = 0;			// there is no user with id equal to 0
+	string session_token = "";
 	int session_restaurantId = 0;	// there is no restaurant with id equal to 0
 
 	boolean firstEditName = true;
 	boolean firstEditSurname = true;
 	boolean firstEditEmail = true;
-	boolean firstEditPsw = true;
 	boolean firstEditPhone = true;
 
 	boolean profileEditedName = false;
 	boolean profileEditedSurname = false;
 	boolean profileEditedEmail = false;
-	boolean profileEditedPsw = false;
 	boolean profileEditedPhone = false;
 
 public:
-	UserGUI(QWidget* parent = Q_NULLPTR);
+	UserGUI(QWidget* parent = Q_NULLPTR, int UserId = 0, string token = "");
 	~UserGUI();
 
 	SpinBoxDelegate delegate;
 
 	void setUserId(int id) {
 		session_userId = id;
+	}
+
+	void setToken(string token) {
+		session_token = token;
 	}
 
 	void setRestaurantId(int id) {
@@ -74,12 +77,20 @@ public:
 		return session_userId;
 	}
 
+	string getToken() {
+		return session_token;
+	}
+
 	int getRestaurantId() {
 		return session_restaurantId;
 	}
 
 	void resetUserId() {
 		session_userId = 0;
+	}
+
+	void resetToken() {
+		session_token = "";
 	}
 
 	void resetRestaurantId() {
@@ -102,13 +113,11 @@ public:
 		firstEditName = true;
 		firstEditSurname = true;
 		firstEditEmail = true;
-		firstEditPsw = true;
 		firstEditPhone = true;
 
 		profileEditedName = false;
 		profileEditedSurname = false;
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 		profileEditedPhone = false;
 	}
 
@@ -117,11 +126,10 @@ private slots:
 	void on_submitOrderBtn_clicked();
 
 	void on_updateBalanceBtn_clicked();
-
+	
 	void on_nameLineEdit_textChanged(QString text);
 	void on_surnameLineEdit_textChanged(QString text);
 	void on_emailLineEdit_textChanged(QString text);
-	void on_pswLineEdit_textChanged(QString text);
 	void on_phoneLineEdit_textChanged(QString text);
 
 	void on_updateProfileBtn_clicked();

@@ -11,5 +11,7 @@ namespace Server.Models
         public int UserId { get; set; }             // Reference to User
         public int RestaurantId { get; set; }       // Reference to Restaurant
         public OrderDish[] Dishes { get; set; }
+
+        public DateTime Date { get; set; }
     }
 }

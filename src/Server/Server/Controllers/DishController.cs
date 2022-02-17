@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Server.Models;
@@ -22,6 +23,7 @@ namespace Server.Controllers
          */
         [Route("all")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public IActionResult Get()
         {
             try
@@ -43,12 +45,14 @@ namespace Server.Controllers
          * API /dish/:id
          * Return the dish with the specified id
          */
-        [HttpGet("{id}")]
+        [Route("{id}")]
+        [HttpGet]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult Get(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -77,19 +81,20 @@ namespace Server.Controllers
          */
         [Route("create")]
         [HttpPost]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Post(Dish dish)
         {
             try
             {
-                if (Regex.IsMatch(dish.Name.ToString(), @"^[#.a-zA-Z\s,-]+$")
-                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*(.\d{1,6})?$")
+                if (Regex.IsMatch(dish.Name.ToString(), _configuration["Regex:DishName"])
+                        && Regex.IsMatch(dish.Price.ToString(), _configuration["Regex:DishPrice"])
                         )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     // Get last element and create a new id for the new user
-                    var dbDishList = dbClient.GetDatabase("dinerhub").GetCollection<User>("Dish").AsQueryable().ToList();
-                    int LastDishId = dbDishList.Last().UserId;
+                    var dbDishList = dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").AsQueryable().ToList();
+                    int LastDishId = dbDishList.Last().DishId;
                     dish.DishId = LastDishId + 1;
 
                     dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").InsertOne(dish);
@@ -114,12 +119,13 @@ namespace Server.Controllers
          */
         [Route("update")]
         [HttpPut]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Put(Dish dish)
         {
             try
             {
-                if (Regex.IsMatch(dish.Name.ToString(), @"^[#.a-zA-Z\s,-]+$")
-                        && Regex.IsMatch(dish.Price.ToString(), @"^[1-9]\d*(.\d{1,6})?$")
+                if (Regex.IsMatch(dish.Name.ToString(), _configuration["Regex:DishName"])
+                        && Regex.IsMatch(dish.Price.ToString(), _configuration["Regex:DishPrice"])
                         )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -163,11 +169,12 @@ namespace Server.Controllers
          */
         [Route("delete/{id:int}")]
         [HttpDelete]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Delete(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -205,11 +212,12 @@ namespace Server.Controllers
          */
         [Route("restaurant/{restaurantId:int}")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult GetRestaurantDishes(int restaurantId)
         {
             try
             {
-                if (Regex.IsMatch(restaurantId.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(restaurantId.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 

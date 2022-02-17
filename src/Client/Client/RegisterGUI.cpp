@@ -19,10 +19,18 @@ RegisterGUI::~RegisterGUI()
 {
 }
 
+/**
+* Back to login interface
+*/
 void RegisterGUI::on_backToLoginBtn_clicked() {
 	close();
 }
 
+/**
+* Register a new user
+* Registering a restaurant requires admin action through adminGUI
+* Registering an admin requires admin action inside MongoDB panel
+*/
 void RegisterGUI::on_registerBtn_clicked() {
 	try {
 		ui.nameErrorLabel->setText(QString::fromStdString(""));

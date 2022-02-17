@@ -37,21 +37,24 @@ private:
 	const int restaurantPhoneCol = 3;
 
 	int session_adminId = 0;			// there is no admin with id equal to 0
+	string session_token = "";
 	int session_deleteUserId = 0;		// there is no user with id equal to 0
 	int session_deleteRestaurantId = 0;		// there is no restaurant with id equal to 0
 
 	boolean firstEditEmail = true;
-	boolean firstEditPsw = true;
 
 	boolean profileEditedEmail = false;
-	boolean profileEditedPsw = false;
 
 public:
-	AdminGUI(QWidget* parent = Q_NULLPTR);
+	AdminGUI(QWidget* parent = Q_NULLPTR, int UserId = 0, string token = "");
 	~AdminGUI();
 
 	void setAdminId(int id) {
 		session_adminId = id;
+	}
+
+	void setToken(string token) {
+		session_token = token;
 	}
 
 	void setDeleteUserId(int id) {
@@ -66,6 +69,10 @@ public:
 		return session_adminId;
 	}
 
+	string getToken() {
+		return session_token;
+	}
+
 	int getDeleteUserId() {
 		return session_deleteUserId;
 	}
@@ -76,6 +83,10 @@ public:
 
 	void resetAdminId() {
 		session_adminId = 0;
+	}
+
+	void resetToken() {
+		session_token = "";
 	}
 
 	void resetDeleteUserId() {
@@ -98,10 +109,8 @@ public:
 
 	void resetVariables() {
 		firstEditEmail = true;
-		firstEditPsw = true;
 
 		profileEditedEmail = false;
-		profileEditedPsw = false;
 	}
 
 private slots:
@@ -114,7 +123,6 @@ private slots:
 	void on_updateProfileBtn_clicked();
 
 	void on_emailLineEdit_textChanged(QString text);
-	void on_pswLineEdit_textChanged(QString text);
 
 	// User List window navbar
 	void on_restaurantListTab_clicked();

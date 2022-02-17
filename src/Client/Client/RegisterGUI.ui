@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>RegisterGUI</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.png</normaloff>icon.png</iconset>
+  </property>
   <widget class="QLabel" name="registerLabel">
    <property name="geometry">
     <rect>

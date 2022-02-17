@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Server.Models;
@@ -22,6 +23,7 @@ namespace Server.Controllers
          */
         [Route("all")]
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Get()
         {
             try
@@ -44,11 +46,12 @@ namespace Server.Controllers
          * Return the restaurant with the specified id
          */
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public IActionResult Get(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -80,14 +83,15 @@ namespace Server.Controllers
          */
         [Route("create")]
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public IActionResult Post(Restaurant restaurant)
         {
             try
             {
-                if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(restaurant.Address.ToString(), @"^[#.0-9a-zA-Z\s,-]+$")
-                    && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
-                    && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                if (Regex.IsMatch(restaurant.Name.ToString(), _configuration["Regex:RestaurantName"])
+                    && Regex.IsMatch(restaurant.Address.ToString(), _configuration["Regex:Address"])
+                    && Regex.IsMatch(restaurant.Phone.ToString(), _configuration["Regex:Phone"])
+                    && Regex.IsMatch(restaurant.Email.ToString().ToLower(), _configuration["Regex:Email"])
                     )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -138,14 +142,15 @@ namespace Server.Controllers
          */
         [Route("update")]
         [HttpPut]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Put(Restaurant restaurant)
         {
             try
             {
-                    if (Regex.IsMatch(restaurant.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                        && Regex.IsMatch(restaurant.Address.ToString(), @"^[#.0-9a-zA-Z\s,-]+$")
-                        && Regex.IsMatch(restaurant.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
-                        && Regex.IsMatch(restaurant.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                    if (Regex.IsMatch(restaurant.Name.ToString(), _configuration["Regex:RestaurantName"])
+                        && Regex.IsMatch(restaurant.Address.ToString(), _configuration["Regex:Address"])
+                        && Regex.IsMatch(restaurant.Phone.ToString(), _configuration["Regex:Phone"])
+                        && Regex.IsMatch(restaurant.Email.ToString().ToLower(), _configuration["Regex:Email"])
                         )
                     {
                         MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -207,11 +212,12 @@ namespace Server.Controllers
          */
         [Route("delete/{id:int}")]
         [HttpDelete]
+        [Authorize(Roles = "ADMIN")]
         public IActionResult Delete(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 

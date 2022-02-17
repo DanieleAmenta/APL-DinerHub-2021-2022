@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Server.Models;
-using Microsoft.AspNetCore.Http;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
+using Server.JwtManager;
+using System.Security.Claims;
 
 namespace Server.Controllers
 {
@@ -13,9 +14,11 @@ namespace Server.Controllers
     {
         // We need to use dependency injection to read variable inside appsettings.json
         private readonly IConfiguration _configuration;
+        private readonly JwtFunctions jwtFunctions;
         public UserController(IConfiguration configuration)
         {
             _configuration = configuration;
+            jwtFunctions = new JwtFunctions(configuration);
         }
 
         /*
@@ -23,22 +26,44 @@ namespace Server.Controllers
          * Return all users
          */
         [Route("all")]
+        [Authorize(Roles = "ADMIN, USER")]
         [HttpGet]
         public IActionResult Get()
         {
+            var currentUser = GetUserTokenDetails();
+
             try
             {
-                MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
+                if(currentUser.IsAdmin)
+                {
+                    // It's an admin, so return all users list
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var filter = Builders<User>.Filter.Eq("IsAdmin", false);
+                    var filter = Builders<User>.Filter.Eq("IsAdmin", false);
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).ToList();
 
-                var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    // The response code is always 200 because
+                    // even if the list is empty, empty list is also an information
+                    return Ok(dbList);
+                }
+                else
+                {
+                    // It's an user, so return only personal data
+                    MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
-                var dbList = collection.Find(filter).ToList();
+                    var filter = Builders<User>.Filter.Eq("UserId", currentUser.UserId);
+                    var collection = dbClient.GetDatabase("dinerhub").GetCollection<User>("User");
+                    var dbList = collection.Find(filter).FirstOrDefault();
 
-                // The response code is always 200 because
-                // even if the list is empty, empty list is also an information
-                return Ok(dbList);
+                    // Hide password
+                    if (dbList != null)
+                    {
+                        dbList.Psw = "";
+                    }
+
+                    return Ok(dbList);
+                }
             }
             catch (Exception ex)
             {
@@ -52,11 +77,12 @@ namespace Server.Controllers
          * Return the user with the specified id
          */
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult Get(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -65,7 +91,10 @@ namespace Server.Controllers
                     var dbList = collection.Find(filter).FirstOrDefault();
 
                     // Hide password
-                    dbList.Psw = "";
+                    if(dbList != null)
+                    {
+                        dbList.Psw = "";
+                    }
 
                     return Ok(dbList);
                 }
@@ -87,13 +116,14 @@ namespace Server.Controllers
          */
         [Route("registration")]
         [HttpPost]
+        [AllowAnonymous]
         public IActionResult Post(User user)
         {
             try {
-                if (Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
-                    && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                if (Regex.IsMatch(user.Name.ToString(), _configuration["Regex:Name"])
+                    && Regex.IsMatch(user.Surname.ToString(), _configuration["Regex:Surname"])
+                    && Regex.IsMatch(user.Phone.ToString(), _configuration["Regex:Phone"])
+                    && Regex.IsMatch(user.Email.ToString().ToLower(), _configuration["Regex:Email"])
                     )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -140,10 +170,11 @@ namespace Server.Controllers
          */
         [Route("login")]
         [HttpPost]
+        [AllowAnonymous]
         public IActionResult Post(string email, string psw)
         {
             try {
-                if (Regex.IsMatch(email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"))
+                if (Regex.IsMatch(email.ToString().ToLower(), _configuration["Regex:Email"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -164,11 +195,20 @@ namespace Server.Controllers
                         var collectionRestaurant = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant");
                         var dbListRestaurant = collectionRestaurant.Find(combineFiltersRestaurant).FirstOrDefault();
 
-                        return Ok(dbListRestaurant);
+                        ReturnRestaurant returnRestaurant = new ReturnRestaurant();
+                        returnRestaurant.Token = jwtFunctions.GenerateToken(dbListRestaurant);
+                        returnRestaurant.RestaurantId = dbListRestaurant.RestaurantId;
+                        returnRestaurant.IsRestaurant = true;
+                        return Ok(returnRestaurant);
                     }
 
-                    // If the user not exist, the status code is 204 (No Content)
-                    return Ok(dbListUser);
+                    ReturnUser returnUser = new ReturnUser();
+                    returnUser.Token = jwtFunctions.GenerateToken(dbListUser);
+                    returnUser.UserId = dbListUser.UserId;
+                    returnUser.IsAdmin = dbListUser.IsAdmin;
+
+                    // If user not exists, the status code is 204 (No Content)
+                    return Ok(returnUser);
                 }
                 else
                 {
@@ -188,14 +228,15 @@ namespace Server.Controllers
          */
         [Route("update")]
         [HttpPut]
+        [Authorize(Roles = "ADMIN, USER")]
         public IActionResult Put(User user)
         {
             try {
-                if (Regex.IsMatch(user.UserId.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(user.Name.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Surname.ToString(), @"^[a-zA-Z]{2,}$")
-                    && Regex.IsMatch(user.Phone.ToString(), @"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$")
-                    && Regex.IsMatch(user.Email.ToString().ToLower(), @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")
+                if (Regex.IsMatch(user.UserId.ToString(), _configuration["Regex:Id"])
+                    && Regex.IsMatch(user.Name.ToString(), _configuration["Regex:Name"])
+                    && Regex.IsMatch(user.Surname.ToString(), _configuration["Regex:Surname"])
+                    && Regex.IsMatch(user.Phone.ToString(), _configuration["Regex:Phone"])
+                    && Regex.IsMatch(user.Email.ToString().ToLower(), _configuration["Regex:Email"])
                     )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -258,10 +299,11 @@ namespace Server.Controllers
          */
         [Route("delete/{id:int}")]
         [HttpDelete]
+        [Authorize(Roles = "ADMIN, USER")]
         public IActionResult Delete(int id)
         {
             try {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")) {
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"])) {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     var filter = Builders<User>.Filter.Eq("UserId", id);
@@ -297,11 +339,12 @@ namespace Server.Controllers
          */
         [Route("update/balance/")]
         [HttpPatch]
+        [Authorize(Roles = "ADMIN, USER")]
         public IActionResult Patch(int id, double balance)
         {
             try {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(balance.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"])
+                    && Regex.IsMatch(balance.ToString(), _configuration["Regex:Balance"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -312,7 +355,7 @@ namespace Server.Controllers
 
                     if (dbList != null)
                     {
-                        double oldBalance = (double)dbList.Balance;
+                        double oldBalance = (double) dbList.Balance;
                         double newBalance = oldBalance + balance;
 
                         if (newBalance >= 0)
@@ -351,11 +394,12 @@ namespace Server.Controllers
          */
         [Route("balance/{id:int}")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, USER")]
         public IActionResult GetBalanceUserId(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -383,6 +427,29 @@ namespace Server.Controllers
                 Console.WriteLine("Internal Server Error: ", ex.Message);
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
+        }
+
+        public User GetUserTokenDetails()
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity != null)
+            {
+                var userClaims = identity.Claims;
+
+                var isAdmin = userClaims.FirstOrDefault(o => o.Type == ClaimTypes.Role)?.Value;
+
+                var user = new User
+                {
+                    UserId = Int32.Parse(userClaims.FirstOrDefault(o => o.Type == ClaimTypes.NameIdentifier)?.Value),
+                    Email = userClaims.FirstOrDefault(o => o.Type == ClaimTypes.Email)?.Value,
+                    Name = userClaims.FirstOrDefault(o => o.Type == ClaimTypes.Name)?.Value,
+                    Surname = userClaims.FirstOrDefault(o => o.Type == ClaimTypes.Surname)?.Value,
+                    IsAdmin = isAdmin == "ADMIN"
+                };
+                return user;
+            }
+            return null;
         }
     }
 }

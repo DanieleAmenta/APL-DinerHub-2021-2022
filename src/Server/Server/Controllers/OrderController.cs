@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -22,6 +23,7 @@ namespace Server.Controllers
          */
         [Route("all")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public IActionResult Get()
         {
             try
@@ -44,11 +46,12 @@ namespace Server.Controllers
          * Return the order with the specified id
          */
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult Get(int id)
         {
             try
             {
-                if(Regex.IsMatch(id.ToString(), @"^\d+$"))
+                if(Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -76,14 +79,15 @@ namespace Server.Controllers
          */
         [Route("create")]
         [HttpPost]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult Post(Order order)
         {
             try
             {
                 // We check only this fields because we
                 // override orderId, status and total
-                if (Regex.IsMatch(order.UserId.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(order.RestaurantId.ToString(), @"^[1-9]\d*$")
+                if (Regex.IsMatch(order.UserId.ToString(), _configuration["Regex:Id"])
+                    && Regex.IsMatch(order.RestaurantId.ToString(), _configuration["Regex:Id"])
                     )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -161,14 +165,14 @@ namespace Server.Controllers
          */
         [Route("update")]
         [HttpPut]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Put(Order order)
         {
             try
             {
-                if (Regex.IsMatch(order.UserId.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(order.RestaurantId.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(order.Total.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(order.Status.ToString(), @"^[0-2]$")
+                if (Regex.IsMatch(order.UserId.ToString(), _configuration["Regex:Id"])
+                    && Regex.IsMatch(order.RestaurantId.ToString(), _configuration["Regex:Id"])
+                    && Regex.IsMatch(order.Total.ToString(), _configuration["Regex:OrderTotal"])
                     )
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
@@ -184,7 +188,8 @@ namespace Server.Controllers
                                                             .Set("Total", order.Total)
                                                             .Set("UserId", dbList.UserId)   // No override to userId
                                                             .Set("RestaurantId", dbList.RestaurantId)    // No override to restaurantId
-                                                            .Set("Dishes", order.Dishes);
+                                                            .Set("Dishes", order.Dishes)
+                                                            .Set("Date", order.Date);
 
                         dbClient.GetDatabase("dinerhub").GetCollection<Order>("Order").UpdateOne(filter, update);
 
@@ -213,11 +218,12 @@ namespace Server.Controllers
          */
         [Route("delete/{id:int}")]
         [HttpDelete]
+        [Authorize(Roles = "ADMIN")]
         public IActionResult Delete(int id)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")) {
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"])) {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     var filter = Builders<Order>.Filter.Eq("OrderId", id);
@@ -254,12 +260,12 @@ namespace Server.Controllers
          */
         [Route("update/status")]
         [HttpPatch]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult Patch(int id, OrderStatus status)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(status.ToString(), @"^[0-2]$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -299,11 +305,12 @@ namespace Server.Controllers
          */
         [Route("status/{orderId:int}")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult GetStatus(int orderId)
         {
             try
             {
-                if (Regex.IsMatch(orderId.ToString(), @"^[1-9]\d*$")) {
+                if (Regex.IsMatch(orderId.ToString(), _configuration["Regex:Id"])) {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     var filter = Builders<Order>.Filter.Eq("OrderId", orderId);
@@ -338,11 +345,12 @@ namespace Server.Controllers
          */
         [Route("dish/{orderId:int}")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult GetDish(int orderId)
         {
             try
             {
-                if (Regex.IsMatch(orderId.ToString(), @"^[1-9]\d*$")) {
+                if (Regex.IsMatch(orderId.ToString(), _configuration["Regex:Id"])) {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
                     var filter = Builders<Order>.Filter.Eq("OrderId", orderId);
@@ -377,11 +385,12 @@ namespace Server.Controllers
          */
         [Route("user/{userId:int}")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, USER, RESTAURANT")]
         public IActionResult GetOrdersByUserId(int userId)
         {
             try
             {
-                if (Regex.IsMatch(userId.ToString(), @"^[1-9]\d*$"))
+                if (Regex.IsMatch(userId.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 
@@ -420,12 +429,12 @@ namespace Server.Controllers
          */
         [Route("restaurant/status/")]
         [HttpGet]
+        [Authorize(Roles = "ADMIN, RESTAURANT")]
         public IActionResult GetOrdersByRestaurantAndStatus(int id, int status)
         {
             try
             {
-                if (Regex.IsMatch(id.ToString(), @"^[1-9]\d*$")
-                    && Regex.IsMatch(status.ToString(), @"^[0-2]$"))
+                if (Regex.IsMatch(id.ToString(), _configuration["Regex:Id"]))
                 {
                     MongoClient dbClient = new MongoClient(_configuration.GetConnectionString("DinerHubConn"));
 

@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>349</width>
+    <width>350</width>
     <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Client</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.png</normaloff>icon.png</iconset>
   </property>
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
@@ -86,17 +90,25 @@
     </item>
    </layout>
   </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QLabel" name="dinerhubName">
    <property name="geometry">
     <rect>
-     <x>130</x>
+     <x>120</x>
      <y>80</y>
-     <width>91</width>
-     <height>16</height>
+     <width>121</width>
+     <height>31</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>Courier</family>
+     <pointsize>20</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
    <property name="text">
-    <string>LOGO DinerHub</string>
+    <string>DinerHub</string>
    </property>
   </widget>
   <widget class="QWidget" name="layoutWidget">
