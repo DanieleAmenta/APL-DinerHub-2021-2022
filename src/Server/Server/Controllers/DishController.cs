@@ -94,7 +94,7 @@ namespace Server.Controllers
 
                     // Get last element and create a new id for the new user
                     var dbDishList = dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").AsQueryable().ToList();
-                    int LastDishId = dbDishList.Last().DishId;
+                    int LastDishId = dbDishList.Count > 0 ? dbDishList.Last().DishId : 0;
                     dish.DishId = LastDishId + 1;
 
                     dbClient.GetDatabase("dinerhub").GetCollection<Dish>("Dish").InsertOne(dish);
