@@ -109,7 +109,7 @@ namespace Server.Controllers
                     {
                         // Get last element and create a new id for the new user
                         var dbRestaurantList = dbClient.GetDatabase("dinerhub").GetCollection<Restaurant>("Restaurant").AsQueryable().ToList();
-                        int LastRestaurantId = dbRestaurantList.Last().RestaurantId;
+                        int LastRestaurantId = dbRestaurantList.Count > 0 ? dbRestaurantList.Last().RestaurantId : 0;
                         restaurant.RestaurantId = LastRestaurantId + 1;
 
                         restaurant.Email = restaurant.Email.ToLower();

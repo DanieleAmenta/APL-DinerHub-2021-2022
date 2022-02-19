@@ -94,7 +94,7 @@ namespace Server.Controllers
 
                     // Get last element and create a new id for the new order
                     var dbOrderList = dbClient.GetDatabase("dinerhub").GetCollection<Order>("Order").AsQueryable().ToList();
-                    int LastOrderId = dbOrderList.Last().OrderId;
+                    int LastOrderId = dbOrderList.Count > 0 ? dbOrderList.Last().OrderId : 0;
                     order.OrderId = LastOrderId + 1;
 
                     double tmpTotal = 0.0;

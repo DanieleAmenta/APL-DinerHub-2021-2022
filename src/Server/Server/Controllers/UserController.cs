@@ -137,7 +137,7 @@ namespace Server.Controllers
                     {
                         // Get last element and create a new id for the new user
                         var dbUserList = dbClient.GetDatabase("dinerhub").GetCollection<User>("User").AsQueryable().ToList();
-                        int LastUserId = dbUserList.Last().UserId;
+                        int LastUserId = dbUserList.Count > 0 ? dbUserList.Last().UserId : 0;
                         user.UserId = LastUserId + 1;
 
                         user.Balance = 0.00;
